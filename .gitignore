@@ -1,0 +1,96 @@
+# .NET Framework & .NET 8 Git Ignore
+
+## Build results
+[Bb]in/
+[Oo]bj/
+out/
+artifacts/
+
+## User-specific files
+*.user
+*.userosscache
+*.suo
+*.sln.docstates
+*.userprefs
+
+## Mono Auto Generated Files
+mono_crash.*
+
+## ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+## VS Code
+.vscode/
+.history/
+
+## Rider
+.idea/
+*.sln.iml
+
+## Visual Studio
+.vs/
+*.dbmdl
+*.pdb
+*.cache
+*.log
+*.tlog
+*.vspscc
+*.vssscc
+*.ncb
+*.sdf
+*.opensdf
+*.suo
+*.sln.docstates
+
+## NuGet
+*.nupkg
+# The packages folder can be ignored because of PackageReference or restore
+**/packages/*
+!**/packages/build/
+!**/packages/repositories.config
+.nuget/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Dotnet CLI
+project.assets.json
+project.nuget.cache
+*.snupkg
+
+## Test Results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+*.testresults
+
+## Publish
+publish/
+*.publish.xml
+
+## Entity Framework
+*.mdf
+*.ldf
+
+## Resharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+## Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+## Mac system files
+.DS_Store
+
+## Logs
+*.log
+
+## Others
+*.swp
+*.bak
+*.tmp
+
+# End of .gitignore
