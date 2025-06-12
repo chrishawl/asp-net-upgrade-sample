@@ -13,9 +13,27 @@ This project showcases a **side-by-side migration approach** where both the lega
 
 ## Project Structure
 
-- **Legacy Application**: `MVCRandomAnswerGenerator/` - Original .NET Framework 4.7.2 MVC app
-- **Migration Roadmap**: `MIGRATION_ROADMAP.md` - Comprehensive 16-issue migration plan
-- **GitHub Issues**: Individual issues for each migration phase with acceptance criteria
+```
+├── src/
+│   ├── MVCRandomAnswerGenerator.Framework/  # .NET Framework 4.7.2 MVC app
+│   └── MVCRandomAnswerGenerator.Core/       # .NET 8 version (placeholder)
+├── tests/                                   # Test projects for both versions
+├── MIGRATION_ROADMAP.md                     # Comprehensive 16-issue migration plan
+└── aspnet-upgrade-sample.sln               # Solution file for both projects
+```
+
+### Source Projects
+- **Framework Version**: `src/MVCRandomAnswerGenerator.Framework/` - Original .NET Framework 4.7.2 MVC app
+- **Core Version**: `src/MVCRandomAnswerGenerator.Core/` - Modern .NET 8 version (to be implemented)
+
+### Test Projects
+- **Framework Tests**: `tests/MVCRandomAnswerGenerator.Framework.Tests/` - Unit tests for legacy version
+- **Core Tests**: `tests/MVCRandomAnswerGenerator.Core.*.Tests/` - Unit tests for .NET 8 version
+
+This side-by-side structure allows for:
+- Independent development and testing of both versions
+- Easy comparison between legacy and modern implementations
+- Gradual migration with reduced risk
 
 ## Migration Strategy
 
