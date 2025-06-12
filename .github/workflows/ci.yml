@@ -1,0 +1,105 @@
+name: CI Build and Test
+
+on:
+  push:
+    branches: [ main, develop, "copilot/*" ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  SOLUTION_FILE: aspnet-upgrade-sample.sln
+  BUILD_CONFIGURATION: Release
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v2.0.0
+      with:
+        nuget-version: 'latest'
+
+    - name: Setup .NET Framework 4.7.2 Developer Pack
+      run: |
+        # Download and install .NET Framework 4.7.2 Developer Pack
+        Write-Host "Downloading .NET Framework 4.7.2 Developer Pack..."
+        Invoke-WebRequest -Uri "https://download.microsoft.com/download/6/E/4/6E48E8AB-DC00-419E-9704-06DD46E5F81D/NDP472-DevPack-ENU.exe" -OutFile "NDP472-DevPack-ENU.exe"
+        Write-Host "Installing .NET Framework 4.7.2 Developer Pack..."
+        Start-Process -FilePath "NDP472-DevPack-ENU.exe" -ArgumentList "/quiet" -Wait
+        Write-Host "Installation completed."
+      shell: powershell
+
+    - name: Restore NuGet packages
+      run: nuget restore ${{ env.SOLUTION_FILE }}
+
+    - name: Build solution
+      run: msbuild ${{ env.SOLUTION_FILE }} /p:Configuration=${{ env.BUILD_CONFIGURATION }} /p:Platform="Any CPU" /verbosity:minimal /p:WarningLevel=1
+
+    - name: Create test results directory
+      run: |
+        if (!(Test-Path "TestResults")) { New-Item -ItemType Directory -Path "TestResults" }
+      shell: powershell
+
+    - name: List packages directory (debug)
+      run: |
+        Write-Host "Checking packages directory..."
+        if (Test-Path "packages") {
+          Get-ChildItem "packages" | Format-Table Name, LastWriteTime
+        } else {
+          Write-Host "Packages directory not found"
+        }
+      shell: powershell
+
+    - name: Run xUnit tests
+      run: |
+        $testDll = "tests\MVCRandomAnswerGenerator.Framework.Tests\bin\${{ env.BUILD_CONFIGURATION }}\MVCRandomAnswerGenerator.Framework.Tests.dll"
+        $xunitRunner = ".\packages\xunit.runner.console.2.4.1\tools\net452\xunit.console.exe"
+        
+        Write-Host "Checking for test assembly: $testDll"
+        if (Test-Path $testDll) {
+          Write-Host "Test assembly found. Running tests..."
+          Write-Host "Using xUnit runner: $xunitRunner"
+          
+          if (Test-Path $xunitRunner) {
+            & $xunitRunner $testDll -xml TestResults\test-results.xml -verbose
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Tests failed with exit code $LASTEXITCODE"
+              exit $LASTEXITCODE
+            }
+          } else {
+            Write-Error "xUnit console runner not found at: $xunitRunner"
+            exit 1
+          }
+        } else {
+          Write-Error "Test assembly not found at: $testDll"
+          Write-Host "Listing contents of test project bin directory:"
+          $binDir = "tests\MVCRandomAnswerGenerator.Framework.Tests\bin"
+          if (Test-Path $binDir) {
+            Get-ChildItem $binDir -Recurse | Format-Table FullName
+          }
+          exit 1
+        }
+      shell: powershell
+
+    - name: Publish test results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: .NET Framework Tests
+        path: TestResults/test-results.xml
+        reporter: java-junit
+        fail-on-error: true
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: TestResults/
