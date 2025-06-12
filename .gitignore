@@ -3,6 +3,30 @@
 ## Build results
 [Bb]in/
 [Oo]bj/
+*.obj/
+*.exe
+*.dll
+*.pdb
+*.cache
+*.mdb
+*.ilk
+*.idb
+*.exp
+*.lib
+*.sbr
+*.suo
+*.cachefile
+*.log
+*.ncb
+*.sdf
+*.opensdf
+*.sln.ide
+*.sln.ide.*
+## Visual Studio Code
+*.code-workspace
+## Build directories
+bin/
+obj/
 out/
 artifacts/
 
@@ -92,5 +116,6 @@ ehthumbs.db
 *.swp
 *.bak
 *.tmp
+.*DS_Store
 
 # End of .gitignore
