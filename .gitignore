@@ -2,11 +2,11 @@
 
 ## Build results
 [Bb]in/
-**/[Bb]in/
 [Oo]bj/
+**/[Bb]in/
 **/[Oo]bj/
-*.obj
-**/*.obj
+*.obj/
+**/*.obj/
 *.exe
 **/*.exe
 *.dll
@@ -48,12 +48,12 @@
 **/*.code-workspace
 ## Build directories
 bin/
-**/bin/
 obj/
-**/obj/
 out/
-**/out/
 artifacts/
+**/bin/
+**/obj/
+**/out/
 **/artifacts/
 
 ## User-specific files
@@ -78,14 +78,14 @@ ScaffoldingReadMe.txt
 
 ## VS Code
 .vscode/
-**/.vscode/
 .history/
+**/.vscode/
 **/.history/
 
 ## Rider
 .idea/
-**/.idea/
 *.sln.iml
+**/.idea/
 **/*.sln.iml
 
 ## Visual Studio
