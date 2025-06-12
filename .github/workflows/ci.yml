@@ -161,19 +161,19 @@ jobs:
           
           # Verify test assembly exists
           if (!(Test-Path $testDll)) {
-            $error = "Test assembly not found at: $testDll"
-            Write-Error $error
+            $errorMessage = "Test assembly not found at: $testDll"
+            Write-Error $errorMessage
             echo "test_failed=true" >> $env:GITHUB_OUTPUT
-            echo "test_error=$error" >> $env:GITHUB_OUTPUT
+            echo "test_error=$errorMessage" >> $env:GITHUB_OUTPUT
             exit 1
           }
           
           # Verify xUnit runner exists
           if (!(Test-Path $xunitRunner)) {
-            $error = "xUnit console runner not found at: $xunitRunner"
-            Write-Error $error
+            $errorMessage = "xUnit console runner not found at: $xunitRunner"
+            Write-Error $errorMessage
             echo "test_failed=true" >> $env:GITHUB_OUTPUT
-            echo "test_error=$error" >> $env:GITHUB_OUTPUT
+            echo "test_error=$errorMessage" >> $env:GITHUB_OUTPUT
             exit 1
           }
           
@@ -181,10 +181,10 @@ jobs:
           & $xunitRunner $testDll -xml TestResults\test-results.xml -verbose
           
           if ($LASTEXITCODE -ne 0) {
-            $error = "Tests failed with exit code $LASTEXITCODE"
-            Write-Error $error
+            $errorMessage = "Tests failed with exit code $LASTEXITCODE"
+            Write-Error $errorMessage
             echo "test_failed=true" >> $env:GITHUB_OUTPUT
-            echo "test_error=$error" >> $env:GITHUB_OUTPUT
+            echo "test_error=$errorMessage" >> $env:GITHUB_OUTPUT
             exit $LASTEXITCODE
           } else {
             Write-Host "All tests passed successfully!"
