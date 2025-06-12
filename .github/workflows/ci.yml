@@ -70,7 +70,7 @@ jobs:
       run: |
         try {
           Write-Host "Building solution..."
-          msbuild ${{ env.SOLUTION_FILE }} /p:Configuration=${{ env.BUILD_CONFIGURATION }} /p:Platform="Any CPU" /verbosity:normal /flp:logfile=build.log;verbosity=diagnostic
+          msbuild ${{ env.SOLUTION_FILE }} /p:Configuration=${{ env.BUILD_CONFIGURATION }} /p:Platform="Any CPU" /verbosity:normal "/flp:logfile=build.log;verbosity=diagnostic"
           Write-Host "Build completed successfully!"
         } catch {
           Write-Host "Build failed with error: $_"
