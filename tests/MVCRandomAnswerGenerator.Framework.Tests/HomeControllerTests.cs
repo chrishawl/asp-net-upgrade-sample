@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Web.Mvc;
 using MVCRandomAnswerGenerator.Controllers;
 using MVCRandomAnswerGenerator.Models;
@@ -255,6 +256,36 @@ namespace MVCRandomAnswerGenerator.Framework.Tests
             Assert.NotNull(model);
             Assert.Single(model);
             Assert.Equal(question, model.First().Question);
+        }
+
+        [Fact]
+        public void Index_POST_HasValidateAntiForgeryTokenAttribute()
+        {
+            // Arrange
+            var controller = CreateController();
+            var method = controller.GetType().GetMethod("Index", new[] { typeof(string) });
+
+            // Act
+            var attributes = method.GetCustomAttributes(typeof(ValidateAntiForgeryTokenAttribute), false);
+
+            // Assert
+            Assert.NotEmpty(attributes);
+            Assert.IsType<ValidateAntiForgeryTokenAttribute>(attributes[0]);
+        }
+
+        [Fact]
+        public void Index_POST_HasHttpPostAttribute()
+        {
+            // Arrange
+            var controller = CreateController();
+            var method = controller.GetType().GetMethod("Index", new[] { typeof(string) });
+
+            // Act
+            var attributes = method.GetCustomAttributes(typeof(HttpPostAttribute), false);
+
+            // Assert
+            Assert.NotEmpty(attributes);
+            Assert.IsType<HttpPostAttribute>(attributes[0]);
         }
     }
 }
