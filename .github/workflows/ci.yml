@@ -209,7 +209,7 @@ jobs:
           
           comment += '### 📋 Next Steps\n';
           comment += '1. Review the failure details above\n';
-          comment += '2. Check the [full workflow logs](${context.payload.repository.html_url}/actions/runs/${context.runId}) for complete context\n';
+          comment += `2. Check the [full workflow logs](${context.payload.repository.html_url}/actions/runs/${context.runId}) for complete context\n`;
           comment += '3. Fix the issues and push new commits to update this PR\n';
           comment += '4. The CI will automatically run again on new commits\n\n';
           comment += '---\n';
