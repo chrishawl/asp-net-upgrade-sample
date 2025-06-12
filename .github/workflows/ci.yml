@@ -1,0 +1,338 @@
+name: CI Build and Test
+
+on:
+  push:
+    branches: [ main, develop, "copilot/*" ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  SOLUTION_FILE: aspnet-upgrade-sample.sln
+  BUILD_CONFIGURATION: Release
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v2.0.0
+      with:
+        nuget-version: 'latest'
+
+    - name: Verify .NET Framework Installation
+      run: |
+        Write-Host "=== .NET Framework Version Information ==="
+        # Check available .NET Framework versions
+        $dotnetVersions = Get-ChildItem "HKLM:SOFTWARE\Microsoft\NET Framework Setup\NDP" -Recurse |
+          Get-ItemProperty -Name version, release -EA 0 |
+          Where-Object { $_.PSChildName -match '^(?!S)\p{Nd}' } |
+          Select-Object PSChildName, version, release
+        
+        Write-Host "Installed .NET Framework versions:"
+        $dotnetVersions | Format-Table
+        
+        # Check MSBuild version
+        Write-Host "MSBuild version:"
+        msbuild -version
+        
+        Write-Host "Environment ready for .NET Framework 4.7.2 build"
+      shell: powershell
+
+    - name: Restore NuGet packages
+      id: restore
+      run: |
+        try {
+          Write-Host "Restoring NuGet packages..."
+          Write-Host "Working directory: $(Get-Location)"
+          Write-Host "Solution file: ${{ env.SOLUTION_FILE }}"
+          
+          # Ensure packages directory exists
+          if (!(Test-Path "packages")) { 
+            New-Item -ItemType Directory -Path "packages" 
+            Write-Host "Created packages directory"
+          }
+          
+          # Clear any existing packages and restore fresh
+          Write-Host "Running NuGet restore..."
+          nuget restore ${{ env.SOLUTION_FILE }} -PackagesDirectory packages -Verbosity detailed
+          
+          # Verify critical packages were restored
+          $criticalPackages = @(
+            "packages\xunit.runner.console.2.4.1\tools\net452\xunit.console.exe",
+            "packages\Microsoft.Net.Compilers.3.6.0\build\Microsoft.Net.Compilers.props"
+          )
+          
+          foreach ($package in $criticalPackages) {
+            if (!(Test-Path $package)) {
+              throw "Critical package not found: $package"
+            } else {
+              Write-Host "Verified package: $package"
+            }
+          }
+          
+          Write-Host "NuGet packages restored successfully!"
+        } catch {
+          Write-Host "NuGet restore failed with error: $_"
+          echo "restore_failed=true" >> $env:GITHUB_OUTPUT
+          echo "restore_error=$_" >> $env:GITHUB_OUTPUT
+          throw $_
+        }
+      shell: powershell
+
+    - name: Build solution
+      id: build
+      run: |
+        try {
+          Write-Host "Building solution..."
+          Write-Host "MSBuild version:"
+          msbuild -version
+          Write-Host "Building with parameters:"
+          Write-Host "Solution: ${{ env.SOLUTION_FILE }}"
+          Write-Host "Configuration: ${{ env.BUILD_CONFIGURATION }}"
+          Write-Host "Platform: Any CPU"
+          
+          # Use separate parameters to avoid syntax issues
+          $buildArgs = @(
+            "${{ env.SOLUTION_FILE }}"
+            "/p:Configuration=${{ env.BUILD_CONFIGURATION }}"
+            "/p:Platform=`"Any CPU`""
+            "/verbosity:normal"
+            "/flp:logfile=build.log;verbosity=diagnostic"
+          )
+          
+          & msbuild $buildArgs
+          
+          if ($LASTEXITCODE -ne 0) {
+            throw "MSBuild failed with exit code $LASTEXITCODE"
+          }
+          
+          Write-Host "Build completed successfully!"
+        } catch {
+          Write-Host "Build failed with error: $_"
+          
+          # Try to read build log for more details
+          if (Test-Path "build.log") {
+            Write-Host "=== BUILD LOG CONTENTS ==="
+            Get-Content "build.log" -Tail 50 | ForEach-Object { Write-Host $_ }
+            Write-Host "=== END BUILD LOG ==="
+          }
+          
+          echo "build_failed=true" >> $env:GITHUB_OUTPUT
+          echo "build_error=$_" >> $env:GITHUB_OUTPUT
+          throw $_
+        }
+      shell: powershell
+
+    - name: Create test results directory
+      run: |
+        if (!(Test-Path "TestResults")) { New-Item -ItemType Directory -Path "TestResults" }
+      shell: powershell
+
+    - name: Run xUnit tests
+      id: test
+      run: |
+        try {
+          $testDll = "tests\MVCRandomAnswerGenerator.Framework.Tests\bin\${{ env.BUILD_CONFIGURATION }}\MVCRandomAnswerGenerator.Framework.Tests.dll"
+          $xunitRunner = ".\packages\xunit.runner.console.2.4.1\tools\net452\xunit.console.exe"
+          
+          Write-Host "Test execution details:"
+          Write-Host "Test DLL path: $testDll"
+          Write-Host "xUnit runner path: $xunitRunner"
+          Write-Host "Current directory: $(Get-Location)"
+          
+          # List test assemblies and xunit runners for debugging
+          Write-Host "=== Searching for Test Assemblies ==="
+          Get-ChildItem -Recurse -Filter "*.Tests.dll" | ForEach-Object { Write-Host "Found test assembly: $($_.FullName)" }
+          
+          Write-Host "=== Searching for xUnit Runners ==="
+          Get-ChildItem -Recurse -Filter "xunit.console.exe" | ForEach-Object { Write-Host "Found xUnit runner: $($_.FullName)" }
+          
+          # Verify test assembly exists
+          if (!(Test-Path $testDll)) {
+            $errorMessage = "Test assembly not found at: $testDll"
+            Write-Error $errorMessage
+            echo "test_failed=true" >> $env:GITHUB_OUTPUT
+            echo "test_error=$errorMessage" >> $env:GITHUB_OUTPUT
+            exit 1
+          }
+          
+          # Verify xUnit runner exists
+          if (!(Test-Path $xunitRunner)) {
+            $errorMessage = "xUnit console runner not found at: $xunitRunner"
+            Write-Error $errorMessage
+            echo "test_failed=true" >> $env:GITHUB_OUTPUT
+            echo "test_error=$errorMessage" >> $env:GITHUB_OUTPUT
+            exit 1
+          }
+          
+          Write-Host "Running tests..."
+          & $xunitRunner $testDll -xml TestResults\test-results.xml -verbose
+          
+          if ($LASTEXITCODE -ne 0) {
+            $errorMessage = "Tests failed with exit code $LASTEXITCODE"
+            Write-Error $errorMessage
+            echo "test_failed=true" >> $env:GITHUB_OUTPUT
+            echo "test_error=$errorMessage" >> $env:GITHUB_OUTPUT
+            exit $LASTEXITCODE
+          } else {
+            Write-Host "All tests passed successfully!"
+          }
+        } catch {
+          Write-Host "Test execution failed with error: $_"
+          echo "test_failed=true" >> $env:GITHUB_OUTPUT
+          echo "test_error=$_" >> $env:GITHUB_OUTPUT
+          throw $_
+        }
+      shell: powershell
+
+    - name: Publish test results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: .NET Framework Tests
+        path: TestResults/test-results.xml
+        reporter: java-junit
+        fail-on-error: true
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: TestResults/
+
+    - name: Comment on PR with failure details
+      if: failure() && github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          
+          let comment = '## 🚨 CI Build/Test Failure - Action Required\n\n';
+          comment += '> **@copilot** Please analyze and fix the build/test failures below.\n\n';
+          comment += `**Workflow Run:** [${context.runNumber}](${context.payload.repository.html_url}/actions/runs/${context.runId})\n`;
+          comment += `**Commit:** ${context.sha.substring(0, 7)}\n`;
+          comment += `**Branch:** ${context.ref}\n\n`;
+          
+          // Check for different types of failures
+          const restoreFailed = '${{ steps.restore.outputs.restore_failed }}' === 'true';
+          const buildFailed = '${{ steps.build.outputs.build_failed }}' === 'true';
+          const testFailed = '${{ steps.test.outputs.test_failed }}' === 'true';
+          
+          // Use variables to safely handle error messages that may contain special characters
+          const restoreError = '${{ steps.restore.outputs.restore_error }}';
+          const buildError = '${{ steps.build.outputs.build_error }}';
+          const testError = '${{ steps.test.outputs.test_error }}';
+          
+          let hasFailures = false;
+          
+          if (restoreFailed) {
+            hasFailures = true;
+            comment += '### 📦 NuGet Restore Failure\n';
+            comment += '**Error Details:**\n';
+            comment += '```\n';
+            comment += restoreError || 'NuGet restore failed - check workflow logs for details';
+            comment += '\n```\n\n';
+            comment += '**Common Causes:**\n';
+            comment += '- Missing or invalid NuGet packages\n';
+            comment += '- Package version conflicts\n';
+            comment += '- Network connectivity issues\n';
+            comment += '- Invalid packages.config or project references\n\n';
+          }
+          
+          if (buildFailed) {
+            hasFailures = true;
+            comment += '### 🔨 Build Failure\n';
+            comment += '**Error Details:**\n';
+            comment += '```\n';
+            comment += buildError || 'Build failed - check workflow logs for details';
+            comment += '\n```\n\n';
+            
+            // Try to read build log if it exists
+            try {
+              if (fs.existsSync('build.log')) {
+                const buildLog = fs.readFileSync('build.log', 'utf8');
+                const lastLines = buildLog.split('\n').slice(-30).join('\n');
+                comment += '**Build Log (Last 30 lines):**\n';
+                comment += '```\n';
+                comment += lastLines;
+                comment += '\n```\n\n';
+              }
+            } catch (e) {
+              console.log('Could not read build log:', e.message);
+            }
+            
+            comment += '**Common Causes:**\n';
+            comment += '- Compilation errors in source code\n';
+            comment += '- Missing references or using statements\n';
+            comment += '- Package version mismatches\n';
+            comment += '- Target framework compatibility issues\n\n';
+          }
+          
+          if (testFailed) {
+            hasFailures = true;
+            comment += '### 🧪 Test Failure\n';
+            comment += '**Error Details:**\n';
+            comment += '```\n';
+            comment += testError || 'Tests failed - check workflow logs for details';
+            comment += '\n```\n\n';
+            
+            // Try to read test results if they exist
+            try {
+              if (fs.existsSync('TestResults/test-results.xml')) {
+                comment += '**Test results file generated - check the uploaded artifacts for detailed results.**\n\n';
+              }
+            } catch (e) {
+              console.log('Could not check test results:', e.message);
+            }
+            
+            comment += '**Common Causes:**\n';
+            comment += '- Test assembly not found or not built\n';
+            comment += '- xUnit runner missing or incorrect path\n';
+            comment += '- Test dependencies not available\n';
+            comment += '- Test logic errors or assertion failures\n\n';
+          }
+          
+          if (!hasFailures) {
+            comment += '### ❓ Unknown Failure\n';
+            comment += 'The workflow failed but no specific error details were captured. ';
+            comment += `Please check the [full workflow logs](${context.payload.repository.html_url}/actions/runs/${context.runId}) for details.\n\n`;
+          }
+          
+          comment += '### 🎯 Required Actions\n';
+          comment += '**@copilot** Please:\n';
+          comment += '1. Analyze the error details and build logs above\n';
+          comment += '2. Identify the root cause of the failure(s)\n';
+          comment += '3. Fix the identified issues in the codebase\n';
+          comment += '4. Ensure all NuGet packages are properly restored\n';
+          comment += '5. Verify the build completes successfully\n';
+          comment += '6. Confirm all tests pass\n\n';
+          
+          comment += '### 📋 Debugging Resources\n';
+          comment += `- [Full Workflow Logs](${context.payload.repository.html_url}/actions/runs/${context.runId})\n`;
+          comment += '- [Test Results Artifacts](artifacts will be available after workflow completion)\n';
+          comment += '- [Build Log File](build.log will be generated if build fails)\n\n';
+          
+          comment += '---\n';
+          comment += '*This comment was automatically generated by the CI workflow. ';
+          comment += 'The build must pass before this PR can be merged.*';
+          
+          // Post the comment
+          await github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });

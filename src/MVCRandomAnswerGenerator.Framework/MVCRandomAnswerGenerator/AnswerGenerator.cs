@@ -33,6 +33,9 @@ namespace MVCRandomAnswerGenerator
 
         public static string GenerateAnswer(string question)
         {
+            if (question == null)
+                throw new ArgumentNullException(nameof(question));
+                
             var r = new Random(question.GetHashCode());
             var index = r.Next(Answers.Length);
             return Answers[index];
