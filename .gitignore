@@ -115,7 +115,5 @@ ehthumbs.db
 ## Others
 *.swp
 *.bak
-*.tmp
-.*DS_Store
-
+*.tmb
 # End of .gitignore
