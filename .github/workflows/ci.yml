@@ -55,7 +55,33 @@ jobs:
       run: |
         try {
           Write-Host "Restoring NuGet packages..."
-          nuget restore ${{ env.SOLUTION_FILE }}
+          Write-Host "Working directory: $(Get-Location)"
+          Write-Host "Solution file: ${{ env.SOLUTION_FILE }}"
+          
+          # Ensure packages directory exists
+          if (!(Test-Path "packages")) { 
+            New-Item -ItemType Directory -Path "packages" 
+            Write-Host "Created packages directory"
+          }
+          
+          # Clear any existing packages and restore fresh
+          Write-Host "Running NuGet restore..."
+          nuget restore ${{ env.SOLUTION_FILE }} -PackagesDirectory packages -Verbosity detailed
+          
+          # Verify critical packages were restored
+          $criticalPackages = @(
+            "packages\xunit.runner.console.2.4.1\tools\net452\xunit.console.exe",
+            "packages\Microsoft.Net.Compilers.3.6.0\build\Microsoft.Net.Compilers.props"
+          )
+          
+          foreach ($package in $criticalPackages) {
+            if (!(Test-Path $package)) {
+              throw "Critical package not found: $package"
+            } else {
+              Write-Host "Verified package: $package"
+            }
+          }
+          
           Write-Host "NuGet packages restored successfully!"
         } catch {
           Write-Host "NuGet restore failed with error: $_"
@@ -70,7 +96,7 @@ jobs:
       run: |
         try {
           Write-Host "Building solution..."
-          msbuild ${{ env.SOLUTION_FILE }} /p:Configuration=${{ env.BUILD_CONFIGURATION }} /p:Platform="Any CPU" /verbosity:normal "/flp:logfile=build.log;verbosity=diagnostic"
+          msbuild ${{ env.SOLUTION_FILE }} /p:Configuration=${{ env.BUILD_CONFIGURATION }} /p:Platform="Any CPU" /verbosity:normal /flp:logfile=build.log`;verbosity=diagnostic
           Write-Host "Build completed successfully!"
         } catch {
           Write-Host "Build failed with error: $_"
@@ -153,7 +179,8 @@ jobs:
         script: |
           const fs = require('fs');
           
-          let comment = '## 🚨 CI Build/Test Failure\n\n';
+          let comment = '## 🚨 CI Build/Test Failure - Action Required\n\n';
+          comment += '> **@copilot** Please analyze and fix the build/test failures below.\n\n';
           comment += `**Workflow Run:** [${context.runNumber}](${context.payload.repository.html_url}/actions/runs/${context.runId})\n`;
           comment += `**Commit:** ${context.sha.substring(0, 7)}\n`;
           comment += `**Branch:** ${context.ref}\n\n`;
@@ -164,29 +191,40 @@ jobs:
           const testFailed = '${{ steps.test.outputs.test_failed }}' === 'true';
           
           // Use variables to safely handle error messages that may contain special characters
-          const restoreError = `${{ steps.restore.outputs.restore_error }}`;
-          const buildError = `${{ steps.build.outputs.build_error }}`;
-          const testError = `${{ steps.test.outputs.test_error }}`;
+          const restoreError = '${{ steps.restore.outputs.restore_error }}';
+          const buildError = '${{ steps.build.outputs.build_error }}';
+          const testError = '${{ steps.test.outputs.test_error }}';
+          
+          let hasFailures = false;
           
           if (restoreFailed) {
+            hasFailures = true;
             comment += '### 📦 NuGet Restore Failure\n';
+            comment += '**Error Details:**\n';
             comment += '```\n';
-            comment += restoreError + '\n';
-            comment += '```\n\n';
+            comment += restoreError || 'NuGet restore failed - check workflow logs for details';
+            comment += '\n```\n\n';
+            comment += '**Common Causes:**\n';
+            comment += '- Missing or invalid NuGet packages\n';
+            comment += '- Package version conflicts\n';
+            comment += '- Network connectivity issues\n';
+            comment += '- Invalid packages.config or project references\n\n';
           }
           
           if (buildFailed) {
+            hasFailures = true;
             comment += '### 🔨 Build Failure\n';
+            comment += '**Error Details:**\n';
             comment += '```\n';
-            comment += buildError + '\n';
-            comment += '```\n\n';
+            comment += buildError || 'Build failed - check workflow logs for details';
+            comment += '\n```\n\n';
             
             // Try to read build log if it exists
             try {
               if (fs.existsSync('build.log')) {
                 const buildLog = fs.readFileSync('build.log', 'utf8');
-                const lastLines = buildLog.split('\n').slice(-20).join('\n');
-                comment += '**Last 20 lines of build log:**\n';
+                const lastLines = buildLog.split('\n').slice(-30).join('\n');
+                comment += '**Build Log (Last 30 lines):**\n';
                 comment += '```\n';
                 comment += lastLines;
                 comment += '\n```\n\n';
@@ -194,13 +232,21 @@ jobs:
             } catch (e) {
               console.log('Could not read build log:', e.message);
             }
+            
+            comment += '**Common Causes:**\n';
+            comment += '- Compilation errors in source code\n';
+            comment += '- Missing references or using statements\n';
+            comment += '- Package version mismatches\n';
+            comment += '- Target framework compatibility issues\n\n';
           }
           
           if (testFailed) {
+            hasFailures = true;
             comment += '### 🧪 Test Failure\n';
+            comment += '**Error Details:**\n';
             comment += '```\n';
-            comment += testError + '\n';
-            comment += '```\n\n';
+            comment += testError || 'Tests failed - check workflow logs for details';
+            comment += '\n```\n\n';
             
             // Try to read test results if they exist
             try {
@@ -210,15 +256,37 @@ jobs:
             } catch (e) {
               console.log('Could not check test results:', e.message);
             }
+            
+            comment += '**Common Causes:**\n';
+            comment += '- Test assembly not found or not built\n';
+            comment += '- xUnit runner missing or incorrect path\n';
+            comment += '- Test dependencies not available\n';
+            comment += '- Test logic errors or assertion failures\n\n';
           }
           
-          comment += '### 📋 Next Steps\n';
-          comment += '1. Review the failure details above\n';
-          comment += `2. Check the [full workflow logs](${context.payload.repository.html_url}/actions/runs/${context.runId}) for complete context\n`;
-          comment += '3. Fix the issues and push new commits to update this PR\n';
-          comment += '4. The CI will automatically run again on new commits\n\n';
+          if (!hasFailures) {
+            comment += '### ❓ Unknown Failure\n';
+            comment += 'The workflow failed but no specific error details were captured. ';
+            comment += `Please check the [full workflow logs](${context.payload.repository.html_url}/actions/runs/${context.runId}) for details.\n\n`;
+          }
+          
+          comment += '### 🎯 Required Actions\n';
+          comment += '**@copilot** Please:\n';
+          comment += '1. Analyze the error details and build logs above\n';
+          comment += '2. Identify the root cause of the failure(s)\n';
+          comment += '3. Fix the identified issues in the codebase\n';
+          comment += '4. Ensure all NuGet packages are properly restored\n';
+          comment += '5. Verify the build completes successfully\n';
+          comment += '6. Confirm all tests pass\n\n';
+          
+          comment += '### 📋 Debugging Resources\n';
+          comment += `- [Full Workflow Logs](${context.payload.repository.html_url}/actions/runs/${context.runId})\n`;
+          comment += '- [Test Results Artifacts](artifacts will be available after workflow completion)\n';
+          comment += '- [Build Log File](build.log will be generated if build fails)\n\n';
+          
           comment += '---\n';
-          comment += '*This comment was automatically generated by the CI workflow when build/test failures were detected.*';
+          comment += '*This comment was automatically generated by the CI workflow. ';
+          comment += 'The build must pass before this PR can be merged.*';
           
           // Post the comment
           await github.rest.issues.createComment({
