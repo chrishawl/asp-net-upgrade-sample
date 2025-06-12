@@ -96,10 +96,39 @@ jobs:
       run: |
         try {
           Write-Host "Building solution..."
-          msbuild ${{ env.SOLUTION_FILE }} /p:Configuration=${{ env.BUILD_CONFIGURATION }} /p:Platform="Any CPU" /verbosity:normal /flp:logfile=build.log`;verbosity=diagnostic
+          Write-Host "MSBuild version:"
+          msbuild -version
+          Write-Host "Building with parameters:"
+          Write-Host "Solution: ${{ env.SOLUTION_FILE }}"
+          Write-Host "Configuration: ${{ env.BUILD_CONFIGURATION }}"
+          Write-Host "Platform: Any CPU"
+          
+          # Use separate parameters to avoid syntax issues
+          $buildArgs = @(
+            "${{ env.SOLUTION_FILE }}"
+            "/p:Configuration=${{ env.BUILD_CONFIGURATION }}"
+            "/p:Platform=`"Any CPU`""
+            "/verbosity:normal"
+            "/flp:logfile=build.log;verbosity=diagnostic"
+          )
+          
+          & msbuild $buildArgs
+          
+          if ($LASTEXITCODE -ne 0) {
+            throw "MSBuild failed with exit code $LASTEXITCODE"
+          }
+          
           Write-Host "Build completed successfully!"
         } catch {
           Write-Host "Build failed with error: $_"
+          
+          # Try to read build log for more details
+          if (Test-Path "build.log") {
+            Write-Host "=== BUILD LOG CONTENTS ==="
+            Get-Content "build.log" -Tail 50 | ForEach-Object { Write-Host $_ }
+            Write-Host "=== END BUILD LOG ==="
+          }
+          
           echo "build_failed=true" >> $env:GITHUB_OUTPUT
           echo "build_error=$_" >> $env:GITHUB_OUTPUT
           throw $_
@@ -117,6 +146,18 @@ jobs:
         try {
           $testDll = "tests\MVCRandomAnswerGenerator.Framework.Tests\bin\${{ env.BUILD_CONFIGURATION }}\MVCRandomAnswerGenerator.Framework.Tests.dll"
           $xunitRunner = ".\packages\xunit.runner.console.2.4.1\tools\net452\xunit.console.exe"
+          
+          Write-Host "Test execution details:"
+          Write-Host "Test DLL path: $testDll"
+          Write-Host "xUnit runner path: $xunitRunner"
+          Write-Host "Current directory: $(Get-Location)"
+          
+          # List test assemblies and xunit runners for debugging
+          Write-Host "=== Searching for Test Assemblies ==="
+          Get-ChildItem -Recurse -Filter "*.Tests.dll" | ForEach-Object { Write-Host "Found test assembly: $($_.FullName)" }
+          
+          Write-Host "=== Searching for xUnit Runners ==="
+          Get-ChildItem -Recurse -Filter "xunit.console.exe" | ForEach-Object { Write-Host "Found xUnit runner: $($_.FullName)" }
           
           # Verify test assembly exists
           if (!(Test-Path $testDll)) {
@@ -137,7 +178,7 @@ jobs:
           }
           
           Write-Host "Running tests..."
-          & $xunitRunner $testDll -xml TestResults\test-results.xml
+          & $xunitRunner $testDll -xml TestResults\test-results.xml -verbose
           
           if ($LASTEXITCODE -ne 0) {
             $error = "Tests failed with exit code $LASTEXITCODE"
