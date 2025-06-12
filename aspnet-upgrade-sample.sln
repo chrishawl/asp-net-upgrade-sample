@@ -10,6 +10,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{B8E69FB1
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MVCRandomAnswerGenerator", "src\MVCRandomAnswerGenerator.Framework\MVCRandomAnswerGenerator\MVCRandomAnswerGenerator.csproj", "{7CDA8782-726A-8EAE-4A90-48632A04057D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MVCRandomAnswerGenerator.Framework.Tests", "tests\MVCRandomAnswerGenerator.Framework.Tests\MVCRandomAnswerGenerator.Framework.Tests.csproj", "{C9F5A8D1-3E7B-4F2A-9C8D-6E5F7A4B3C2D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,12 +22,17 @@ Global
 		{7CDA8782-726A-8EAE-4A90-48632A04057D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7CDA8782-726A-8EAE-4A90-48632A04057D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7CDA8782-726A-8EAE-4A90-48632A04057D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C9F5A8D1-3E7B-4F2A-9C8D-6E5F7A4B3C2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C9F5A8D1-3E7B-4F2A-9C8D-6E5F7A4B3C2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C9F5A8D1-3E7B-4F2A-9C8D-6E5F7A4B3C2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C9F5A8D1-3E7B-4F2A-9C8D-6E5F7A4B3C2D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{7CDA8782-726A-8EAE-4A90-48632A04057D} = {A7D58FA0-1C85-4AB8-9F5F-B5C6D4B3E2A1}
+		{C9F5A8D1-3E7B-4F2A-9C8D-6E5F7A4B3C2D} = {B8E69FB1-2D96-5BC9-AF6F-C6D7E5F4F3B2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {904232ED-D54B-4077-9E6C-189EAB56D489}
