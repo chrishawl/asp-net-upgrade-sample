@@ -163,17 +163,22 @@ jobs:
           const buildFailed = '${{ steps.build.outputs.build_failed }}' === 'true';
           const testFailed = '${{ steps.test.outputs.test_failed }}' === 'true';
           
+          // Use variables to safely handle error messages that may contain special characters
+          const restoreError = `${{ steps.restore.outputs.restore_error }}`;
+          const buildError = `${{ steps.build.outputs.build_error }}`;
+          const testError = `${{ steps.test.outputs.test_error }}`;
+          
           if (restoreFailed) {
             comment += '### 📦 NuGet Restore Failure\n';
             comment += '```\n';
-            comment += '${{ steps.restore.outputs.restore_error }}\n';
+            comment += restoreError + '\n';
             comment += '```\n\n';
           }
           
           if (buildFailed) {
             comment += '### 🔨 Build Failure\n';
             comment += '```\n';
-            comment += '${{ steps.build.outputs.build_error }}\n';
+            comment += buildError + '\n';
             comment += '```\n\n';
             
             // Try to read build log if it exists
@@ -194,7 +199,7 @@ jobs:
           if (testFailed) {
             comment += '### 🧪 Test Failure\n';
             comment += '```\n';
-            comment += '${{ steps.test.outputs.test_error }}\n';
+            comment += testError + '\n';
             comment += '```\n\n';
             
             // Try to read test results if they exist
