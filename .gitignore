@@ -2,118 +2,195 @@
 
 ## Build results
 [Bb]in/
+**/[Bb]in/
 [Oo]bj/
-*.obj/
+**/[Oo]bj/
+*.obj
+**/*.obj
 *.exe
+**/*.exe
 *.dll
+**/*.dll
 *.pdb
+**/*.pdb
 *.cache
+**/*.cache
 *.mdb
+**/*.mdb
 *.ilk
+**/*.ilk
 *.idb
+**/*.idb
 *.exp
+**/*.exp
 *.lib
+**/*.lib
 *.sbr
+**/*.sbr
 *.suo
+**/*.suo
 *.cachefile
+**/*.cachefile
 *.log
+**/*.log
 *.ncb
+**/*.ncb
 *.sdf
+**/*.sdf
 *.opensdf
+**/*.opensdf
 *.sln.ide
+**/*.sln.ide
 *.sln.ide.*
+**/*.sln.ide.*
 ## Visual Studio Code
 *.code-workspace
+**/*.code-workspace
 ## Build directories
 bin/
+**/bin/
 obj/
+**/obj/
 out/
+**/out/
 artifacts/
+**/artifacts/
 
 ## User-specific files
 *.user
+**/*.user
 *.userosscache
+**/*.userosscache
 *.suo
+**/*.suo
 *.sln.docstates
+**/*.sln.docstates
 *.userprefs
+**/*.userprefs
 
 ## Mono Auto Generated Files
 mono_crash.*
+**/mono_crash.*
 
 ## ASP.NET Scaffolding
 ScaffoldingReadMe.txt
+**/ScaffoldingReadMe.txt
 
 ## VS Code
 .vscode/
+**/.vscode/
 .history/
+**/.history/
 
 ## Rider
 .idea/
+**/.idea/
 *.sln.iml
+**/*.sln.iml
 
 ## Visual Studio
 .vs/
+**/.vs/
 *.dbmdl
+**/*.dbmdl
 *.pdb
+**/*.pdb
 *.cache
+**/*.cache
 *.log
+**/*.log
 *.tlog
+**/*.tlog
 *.vspscc
+**/*.vspscc
 *.vssscc
+**/*.vssscc
 *.ncb
+**/*.ncb
 *.sdf
+**/*.sdf
 *.opensdf
+**/*.opensdf
 *.suo
+**/*.suo
 *.sln.docstates
+**/*.sln.docstates
 
 ## NuGet
 *.nupkg
+**/*.nupkg
 # The packages folder can be ignored because of PackageReference or restore
 **/packages/*
 !**/packages/build/
 !**/packages/repositories.config
 .nuget/
+**/.nuget/
 project.lock.json
+**/project.lock.json
 project.fragment.lock.json
+**/project.fragment.lock.json
 artifacts/
+**/artifacts/
 
 ## Dotnet CLI
 project.assets.json
+**/project.assets.json
 project.nuget.cache
+**/project.nuget.cache
 *.snupkg
+**/*.snupkg
 
 ## Test Results
 TestResults/
+**/TestResults/
 *.trx
+**/*.trx
 *.coverage
+**/*.coverage
 *.coveragexml
+**/*.coveragexml
 *.testresults
+**/*.testresults
 
 ## Publish
 publish/
+**/publish/
 *.publish.xml
+**/*.publish.xml
 
 ## Entity Framework
 *.mdf
+**/*.mdf
 *.ldf
+**/*.ldf
 
 ## Resharper
 _ReSharper*/
+**/_ReSharper*/
 *.[Rr]e[Ss]harper
+**/*.[Rr]e[Ss]harper
 *.DotSettings.user
+**/*.DotSettings.user
 
 ## Windows image file caches
 Thumbs.db
+**/Thumbs.db
 ehthumbs.db
+**/ehthumbs.db
 
 ## Mac system files
 .DS_Store
+**/.DS_Store
 
 ## Logs
 *.log
+**/*.log
 
 ## Others
 *.swp
+**/*.swp
 *.bak
+**/*.bak
 *.tmb
+**/*.tmb
 # End of .gitignore
