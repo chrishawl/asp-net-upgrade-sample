@@ -4,8 +4,6 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{A7D58FA0-1C85-4AB8-9F5F-B5C6D4B3E2A1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MVCRandomAnswerGenerator.Core", "src\MVCRandomAnswerGenerator.Core", "{D1E2A3B4-C5D6-7E8F-9012-3456789ABCDF}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{B8E69FB1-2D96-5BC9-AF6F-C6D7E5F4F3B2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MVCRandomAnswerGenerator", "src\MVCRandomAnswerGenerator.Framework\MVCRandomAnswerGenerator\MVCRandomAnswerGenerator.csproj", "{A4A80C20-AE2A-4CD0-8926-BB98E8C459D2}"

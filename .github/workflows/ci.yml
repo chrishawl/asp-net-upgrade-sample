@@ -37,24 +37,37 @@ jobs:
       shell: powershell
 
     - name: Restore NuGet packages
-      run: nuget restore ${{ env.SOLUTION_FILE }}
+      run: |
+        Write-Host "Restoring NuGet packages for solution..."
+        nuget restore ${{ env.SOLUTION_FILE }}
+        
+        Write-Host "Checking solution structure..."
+        Get-ChildItem -Path . -Name -Recurse -Include "*.csproj" | ForEach-Object { Write-Host "Found project: $_" }
+        
+        Write-Host "Checking packages directory structure..."
+        if (Test-Path "packages") {
+          Write-Host "Root packages directory exists"
+          Get-ChildItem "packages" -Name | ForEach-Object { Write-Host "Package: $_" }
+        }
+      shell: powershell
 
     - name: Build solution
-      run: msbuild ${{ env.SOLUTION_FILE }} /p:Configuration=${{ env.BUILD_CONFIGURATION }} /p:Platform="Any CPU" /verbosity:minimal /p:WarningLevel=1
+      run: |
+        Write-Host "Building solution with MSBuild..."
+        msbuild ${{ env.SOLUTION_FILE }} /p:Configuration=${{ env.BUILD_CONFIGURATION }} /p:Platform="Any CPU" /verbosity:normal /p:WarningLevel=1
+        
+        Write-Host "Build completed. Checking output directories..."
+        if (Test-Path "tests\MVCRandomAnswerGenerator.Framework.Tests\bin\${{ env.BUILD_CONFIGURATION }}") {
+          Write-Host "Test project build output:"
+          Get-ChildItem "tests\MVCRandomAnswerGenerator.Framework.Tests\bin\${{ env.BUILD_CONFIGURATION }}" -Name
+        } else {
+          Write-Host "Test project build output directory not found"
+        }
+      shell: powershell
 
     - name: Create test results directory
       run: |
         if (!(Test-Path "TestResults")) { New-Item -ItemType Directory -Path "TestResults" }
-      shell: powershell
-
-    - name: List packages directory (debug)
-      run: |
-        Write-Host "Checking packages directory..."
-        if (Test-Path "packages") {
-          Get-ChildItem "packages" | Format-Table Name, LastWriteTime
-        } else {
-          Write-Host "Packages directory not found"
-        }
       shell: powershell
 
     - name: Run xUnit tests
@@ -62,31 +75,73 @@ jobs:
         $testDll = "tests\MVCRandomAnswerGenerator.Framework.Tests\bin\${{ env.BUILD_CONFIGURATION }}\MVCRandomAnswerGenerator.Framework.Tests.dll"
         $xunitRunner = ".\packages\xunit.runner.console.2.4.1\tools\net452\xunit.console.exe"
         
-        Write-Host "Checking for test assembly: $testDll"
-        if (Test-Path $testDll) {
-          Write-Host "Test assembly found. Running tests..."
-          Write-Host "Using xUnit runner: $xunitRunner"
-          
-          if (Test-Path $xunitRunner) {
-            & $xunitRunner $testDll -xml TestResults\test-results.xml -verbose
-            if ($LASTEXITCODE -ne 0) {
-              Write-Error "Tests failed with exit code $LASTEXITCODE"
-              exit $LASTEXITCODE
-            }
-          } else {
-            Write-Error "xUnit console runner not found at: $xunitRunner"
-            exit 1
-          }
-        } else {
+        Write-Host "=== Test Execution Debug Information ==="
+        Write-Host "Looking for test assembly: $testDll"
+        Write-Host "Looking for xUnit runner: $xunitRunner"
+        
+        # Check test assembly exists
+        if (!(Test-Path $testDll)) {
           Write-Error "Test assembly not found at: $testDll"
-          Write-Host "Listing contents of test project bin directory:"
-          $binDir = "tests\MVCRandomAnswerGenerator.Framework.Tests\bin"
-          if (Test-Path $binDir) {
-            Get-ChildItem $binDir -Recurse | Format-Table FullName
+          Write-Host "Searching for test assemblies in build output..."
+          
+          $testBinDir = "tests\MVCRandomAnswerGenerator.Framework.Tests\bin"
+          if (Test-Path $testBinDir) {
+            Write-Host "Contents of test bin directory:"
+            Get-ChildItem $testBinDir -Recurse | Format-Table FullName, Length
+          } else {
+            Write-Host "Test bin directory does not exist: $testBinDir"
           }
           exit 1
         }
+        
+        # Check xUnit runner exists
+        if (!(Test-Path $xunitRunner)) {
+          Write-Error "xUnit console runner not found at: $xunitRunner"
+          Write-Host "Searching for xUnit runner in packages..."
+          
+          if (Test-Path "packages") {
+            $xunitPackages = Get-ChildItem "packages" -Name | Where-Object { $_ -like "*xunit*" }
+            if ($xunitPackages) {
+              Write-Host "Found xUnit packages:"
+              $xunitPackages | ForEach-Object { 
+                Write-Host "  $_"
+                $packagePath = "packages\$_"
+                if (Test-Path $packagePath) {
+                  Write-Host "    Contents:"
+                  Get-ChildItem $packagePath -Recurse -Name | Where-Object { $_ -like "*xunit.console.exe" } | ForEach-Object { Write-Host "      $_" }
+                }
+              }
+            }
+          }
+          exit 1
+        }
+        
+        Write-Host "Both test assembly and xUnit runner found. Running tests..."
+        & $xunitRunner $testDll -xml TestResults\test-results.xml -verbose
+        
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "Tests failed with exit code $LASTEXITCODE"
+          exit $LASTEXITCODE
+        } else {
+          Write-Host "All tests passed successfully!"
+        }
       shell: powershell
+
+    - name: Publish test results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: .NET Framework Tests
+        path: TestResults/test-results.xml
+        reporter: java-junit
+        fail-on-error: true
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: TestResults/
 
     - name: Publish test results
       uses: dorny/test-reporter@v1
