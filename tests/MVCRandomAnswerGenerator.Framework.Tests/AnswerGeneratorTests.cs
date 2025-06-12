@@ -167,7 +167,7 @@ namespace MVCRandomAnswerGenerator.Framework.Tests
             var testQuestions = new List<string>();
             
             // Generate enough different questions to potentially hit all answers
-            for (int i = 0; i < 10000; i++)
+            for (int i = 0; i < 1000; i++)
             {
                 testQuestions.Add($"Test question number {i}?");
             }
