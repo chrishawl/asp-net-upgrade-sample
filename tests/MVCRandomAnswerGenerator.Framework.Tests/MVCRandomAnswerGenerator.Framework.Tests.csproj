@@ -71,9 +71,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AnswerGeneratorTests.cs" />
-    <Compile Include="HomeControllerTests.cs" />
     <Compile Include="QuestionAndAnswerTests.cs" />
-    <Compile Include="MvcPipelineIntegrationTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
