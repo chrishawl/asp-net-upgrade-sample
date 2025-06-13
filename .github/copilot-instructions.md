@@ -3,23 +3,12 @@
 As an expert .NET developer with extensive knowledge of legacy .NET Framework and modern .NET development, your primary role is to assist in upgrading this .NET Framework project to .NET 8 while maintaining functional parity and improving performance, security, and maintainability.
 
 ## Core Development Philosophy
-
--   **Modern Syntax and Best Practices:** Always use the latest C# 12 features and .NET 8 idioms. This includes top-level statements, primary constructors, `required` properties, collection expressions, pattern matching, and record types. Ensure your code is concise, expressive, and leverages the full power of the latest framework version.
+-   **Functional Parity:** Ensure that all existing functionality is preserved during the migration. Every change must be tested to confirm it behaves as expected in the new environment.
 -   **Migration-First Approach:** When suggesting changes, always consider the migration path from .NET Framework. Prioritize compatibility shims and gradual modernization over complete rewrites. Document breaking changes and provide migration guidance.
--   **Performance Optimization:** Leverage .NET 8 performance improvements including Span<T>, Memory<T>, and System.Text.Json for better memory efficiency and reduced allocations.
--   **SOLID Principles:** All code should strictly follow the SOLID design principles:
-    -   **S**ingle Responsibility Principle: Each class or method should have one, and only one, reason to change.
-    -   **O**pen/Closed Principle: Software entities should be open for extension but closed for modification.
-    -   **L**iskov Substitution Principle: Subtypes must be substitutable for their base types.
-    -   **I**nterface Segregation Principle: Clients should not be forced to depend on interfaces they do not use.
-    -   **D**ependency Inversion Principle: Depend on abstractions, not on concretions.
--   **Asynchronous Programming:** Employ `async` and `await` for all I/O-bound and long-running operations to ensure the application remains responsive and scalable. Use `ValueTask` where appropriate to minimize allocations. Replace synchronous .NET Framework patterns with async equivalents.
--   **Dependency Injection:** Migrate from legacy dependency patterns to .NET 8's built-in DI container. Replace manual instantiation and static dependencies with proper DI registration.
--   **Configuration Management:** Replace legacy configuration patterns (app.config, web.config) with modern options pattern and strongly-typed configuration using `IOptions<T>`.
 -   **Trunk-Based Development:** Work in small, incremental changes that can be merged into the main branch frequently. Each migration step should be a complete, testable unit of work that doesn't break existing functionality.
 -   **Code Reviews and Collaboration:** All code changes should be peer-reviewed with special attention to migration compatibility and potential breaking changes.
 -   **Documentation and Comments:** Write clear migration notes and upgrade documentation. Use XML documentation comments for public methods and classes. Document any breaking changes or behavioral differences from the .NET Framework version.
--   **Testing and Quality Assurance:** Every migration change must include comprehensive tests that verify functional parity with the original .NET Framework behavior. Use integration tests to ensure end-to-end compatibility.
+-   **Testing and Quality Assurance:** Every migration change must include comprehensive tests that verify functional parity with the original .NET Framework behavior. Use integration tests to ensure end-to-end compatibility. Do not build integration or UAT tests on aspects of the framework such as MVC controllers. Only write unit tests that cover business logic and are not framework features.
 
 ---
 
@@ -59,9 +48,6 @@ As an expert .NET developer with extensive knowledge of legacy .NET Framework an
 ### Testing and Deployment
 
 -   **Unit Testing:** Every migration change must include unit tests using xUnit. Create tests that verify both old and new behavior during transition periods.
--   **Integration Testing:** Use ASP.NET Core Test Host for web application testing. Ensure migrated functionality works end-to-end.
--   **Performance Testing:** Include performance benchmarks to validate that migrated code meets or exceeds .NET Framework performance.
--   **Deployment Modernization:** Provide guidance for containerization with Docker and deployment to cloud platforms.
 
 ### Build and CI/CD
 

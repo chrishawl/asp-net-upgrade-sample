@@ -11,6 +11,14 @@ namespace MVCRandomAnswerGenerator.Controllers
     {
         private static List<QuestionAndAnswer> allAnswers = new List<QuestionAndAnswer>();
 
+        /// <summary>
+        /// Clears all stored questions and answers. Used primarily for testing purposes.
+        /// </summary>
+        public static void ClearAllAnswers()
+        {
+            allAnswers.Clear();
+        }
+
         public ActionResult Index()
         {
             // Ask a question.

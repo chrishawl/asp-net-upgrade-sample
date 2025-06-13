@@ -71,13 +71,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AnswerGeneratorTests.cs" />
-    <Compile Include="HomeControllerTests.cs" />
     <Compile Include="QuestionAndAnswerTests.cs" />
-    <Compile Include="MvcPipelineIntegrationTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\MVCRandomAnswerGenerator.Framework\MVCRandomAnswerGenerator\MVCRandomAnswerGenerator.csproj">
