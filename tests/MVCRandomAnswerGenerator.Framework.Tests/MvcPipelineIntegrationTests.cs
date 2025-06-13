@@ -1,10 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Web;
 using System.Web.Mvc;
-using System.Web.Routing;
 using MVCRandomAnswerGenerator.Controllers;
 using MVCRandomAnswerGenerator.Models;
 using Xunit;
@@ -12,10 +9,10 @@ using Xunit;
 namespace MVCRandomAnswerGenerator.Framework.Tests
 {
     /// <summary>
-    /// Integration tests for MVC pipeline functionality.
-    /// These tests validate the core MVC routing and controller functionality without requiring external mocking frameworks.
+    /// Unit tests for HomeController functionality.
+    /// These tests validate controller behavior in isolation without requiring MVC infrastructure.
     /// </summary>
-    public class MvcPipelineIntegrationTests
+    public class HomeControllerUnitTests
     {
         private HomeController CreateController()
         {
@@ -47,10 +44,9 @@ namespace MVCRandomAnswerGenerator.Framework.Tests
         }
 
         [Fact]
-        public void ControllerFactory_CanCreateHomeController()
+        public void HomeController_CanBeInstantiated()
         {
-            // Arrange & Act - This test is skipped as it requires full MVC infrastructure
-            // In a unit test environment, we focus on testing controller behavior directly
+            // Arrange & Act
             var controller = new HomeController();
 
             // Assert
@@ -80,7 +76,7 @@ namespace MVCRandomAnswerGenerator.Framework.Tests
         {
             // Arrange
             var controller = CreateController();
-            const string testQuestion = "Integration test question?";
+            const string testQuestion = "Unit test question?";
 
             // Act
             var result = controller.Index(testQuestion);
@@ -116,8 +112,8 @@ namespace MVCRandomAnswerGenerator.Framework.Tests
         [Fact]
         public void StaticState_PersistsAcrossControllerInstances()
         {
-            // Arrange
-            HomeController.ClearAllAnswers(); // Clear state first
+            // Arrange - Start with clean state for this specific test
+            HomeController.ClearAllAnswers();
             var controller1 = new HomeController();
             var controller2 = new HomeController();
             const string testQuestion = "State persistence test?";

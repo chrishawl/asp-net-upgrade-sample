@@ -78,6 +78,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\MVCRandomAnswerGenerator.Framework\MVCRandomAnswerGenerator\MVCRandomAnswerGenerator.csproj">
