@@ -1,0 +1,63 @@
+name: .NET 8 CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'src/MVCRandomAnswerGenerator.Core.Domain/**'
+      - 'tests/MVCRandomAnswerGenerator.Core.Domain.Tests/**'
+      - '.github/workflows/dotnet-8.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/MVCRandomAnswerGenerator.Core.Domain/**'
+      - 'tests/MVCRandomAnswerGenerator.Core.Domain.Tests/**'
+      - '.github/workflows/dotnet-8.yml'
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  BUILD_CONFIGURATION: Release
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  checks: write
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore tests/MVCRandomAnswerGenerator.Core.Domain.Tests/MVCRandomAnswerGenerator.Core.Domain.Tests.csproj
+
+    - name: Build
+      run: dotnet build tests/MVCRandomAnswerGenerator.Core.Domain.Tests/MVCRandomAnswerGenerator.Core.Domain.Tests.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+
+    - name: Test
+      run: dotnet test tests/MVCRandomAnswerGenerator.Core.Domain.Tests/MVCRandomAnswerGenerator.Core.Domain.Tests.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --logger trx --results-directory TestResults
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: dotnet-8-test-results
+        path: TestResults/
+
+    - name: Publish test results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: .NET 8 Tests
+        path: TestResults/*.trx
+        reporter: dotnet-trx
+        fail-on-error: true

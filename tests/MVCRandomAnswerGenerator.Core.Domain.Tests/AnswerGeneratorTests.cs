@@ -69,42 +69,4 @@ public class AnswerGeneratorTests
         // Assert
         Assert.Contains(answer, expectedAnswers);
     }
-
-    [Fact]
-    public async Task GenerateAnswerAsync_WithSameQuestion_ReturnsSameAnswer()
-    {
-        // Arrange
-        const string question = "Will this async work?";
-
-        // Act
-        var answer1 = await _answerGenerator.GenerateAnswerAsync(question);
-        var answer2 = await _answerGenerator.GenerateAnswerAsync(question);
-
-        // Assert
-        Assert.Equal(answer1, answer2);
-    }
-
-    [Fact]
-    public async Task GenerateAnswerAsync_WithNullQuestion_ThrowsArgumentNullException()
-    {
-        // Arrange
-        string? nullQuestion = null;
-
-        // Act & Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _answerGenerator.GenerateAnswerAsync(nullQuestion!).AsTask());
-    }
-
-    [Fact]
-    public async Task GenerateAnswerAsync_ReturnsExpectedAnswer_ComparedToSync()
-    {
-        // Arrange
-        const string question = "Should async and sync return the same?";
-
-        // Act
-        var syncAnswer = _answerGenerator.GenerateAnswer(question);
-        var asyncAnswer = await _answerGenerator.GenerateAnswerAsync(question);
-
-        // Assert
-        Assert.Equal(syncAnswer, asyncAnswer);
-    }
 }

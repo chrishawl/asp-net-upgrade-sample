@@ -47,17 +47,4 @@ public sealed class AnswerGenerator : IAnswerGenerator
         var index = random.Next(Answers.Length);
         return Answers[index];
     }
-
-    /// <summary>
-    /// Asynchronously generates a deterministic answer to the specified question.
-    /// This method completes synchronously but returns a ValueTask for API consistency.
-    /// </summary>
-    /// <param name="question">The question to answer. Cannot be null.</param>
-    /// <returns>A task that represents the asynchronous operation, containing a Magic 8-Ball style answer.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when question is null.</exception>
-    public ValueTask<string> GenerateAnswerAsync(string question)
-    {
-        var answer = GenerateAnswer(question);
-        return ValueTask.FromResult(answer);
-    }
 }
