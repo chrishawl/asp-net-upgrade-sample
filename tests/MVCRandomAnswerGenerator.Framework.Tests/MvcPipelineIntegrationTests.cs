@@ -15,6 +15,13 @@ namespace MVCRandomAnswerGenerator.Framework.Tests
     /// </summary>
     public class MvcPipelineIntegrationTests
     {
+        private HomeController CreateController()
+        {
+            // Clear static state before each test to ensure isolation
+            HomeController.ClearAllAnswers();
+            return new HomeController();
+        }
+
         private RouteCollection CreateRoutes()
         {
             var routes = new RouteCollection();
@@ -58,7 +65,7 @@ namespace MVCRandomAnswerGenerator.Framework.Tests
         public void HomeController_Index_GET_ReturnsViewWithModel()
         {
             // Arrange
-            var controller = new HomeController();
+            var controller = CreateController();
 
             // Act
             var result = controller.Index();
@@ -75,7 +82,7 @@ namespace MVCRandomAnswerGenerator.Framework.Tests
         public void HomeController_Index_POST_AddsQuestionToModel()
         {
             // Arrange
-            var controller = new HomeController();
+            var controller = CreateController();
             const string testQuestion = "Integration test question?";
 
             // Act
@@ -96,7 +103,7 @@ namespace MVCRandomAnswerGenerator.Framework.Tests
         public void HomeController_About_ReturnsViewWithMessage()
         {
             // Arrange
-            var controller = new HomeController();
+            var controller = CreateController();
 
             // Act
             var result = controller.About();
@@ -113,6 +120,7 @@ namespace MVCRandomAnswerGenerator.Framework.Tests
         public void StaticState_PersistsAcrossControllerInstances()
         {
             // Arrange
+            HomeController.ClearAllAnswers(); // Clear state first
             var controller1 = new HomeController();
             var controller2 = new HomeController();
             const string testQuestion = "State persistence test?";
@@ -136,7 +144,7 @@ namespace MVCRandomAnswerGenerator.Framework.Tests
         public void MultipleQuestions_MaintainLIFOOrder()
         {
             // Arrange
-            var controller = new HomeController();
+            var controller = CreateController();
             const string firstQuestion = "First question?";
             const string secondQuestion = "Second question?";
 
@@ -160,7 +168,7 @@ namespace MVCRandomAnswerGenerator.Framework.Tests
         public void AnswerGenerator_ProducesConsistentAnswers()
         {
             // Arrange
-            var controller = new HomeController();
+            var controller = CreateController();
             const string testQuestion = "Consistency test question?";
 
             // Act

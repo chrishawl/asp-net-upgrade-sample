@@ -13,6 +13,8 @@ namespace MVCRandomAnswerGenerator.Framework.Tests
     {
         private HomeController CreateController()
         {
+            // Clear static state before each test to ensure isolation
+            HomeController.ClearAllAnswers();
             return new HomeController();
         }
 
@@ -243,8 +245,9 @@ namespace MVCRandomAnswerGenerator.Framework.Tests
         public void Controller_StaticState_PersistsAcrossInstances()
         {
             // Arrange
-            var controller1 = CreateController();
-            var controller2 = CreateController();
+            HomeController.ClearAllAnswers(); // Start with clean state
+            var controller1 = new HomeController(); // Don't use CreateController() for this test
+            var controller2 = new HomeController(); // Don't use CreateController() for this test
             const string question = "Cross-instance persistence test?";
 
             // Act
