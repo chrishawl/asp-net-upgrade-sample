@@ -34,7 +34,23 @@ jobs:
     - name: Restore NuGet packages
       run: |
         Write-Host "Restoring NuGet packages..."
-        nuget restore ${{ env.SOLUTION_FILE }} -PackagesDirectory packages -Verbosity normal
+        Write-Host "Solution file: ${{ env.SOLUTION_FILE }}"
+        Write-Host "Current directory: $(Get-Location)"
+        
+        # Restore packages with verbose output
+        nuget restore ${{ env.SOLUTION_FILE }} -PackagesDirectory packages -Verbosity detailed -NonInteractive
+        
+        if ($LASTEXITCODE -ne 0) {
+          throw "NuGet restore failed with exit code $LASTEXITCODE"
+        }
+        
+        # Verify packages directory was created
+        if (!(Test-Path "packages")) {
+          throw "Packages directory was not created after NuGet restore"
+        }
+        
+        Write-Host "Packages directory contents:"
+        Get-ChildItem -Path "packages" -Directory | ForEach-Object { Write-Host "  $($_.Name)" }
         
         # Verify critical packages were restored
         $criticalPackages = @(
@@ -44,9 +60,16 @@ jobs:
         
         foreach ($package in $criticalPackages) {
           if (!(Test-Path $package)) {
+            Write-Host "❌ Critical package not found: $package"
+            
+            # Try to find alternative locations
+            $packageName = Split-Path $package -Leaf
+            Write-Host "Searching for $packageName in packages directory..."
+            Get-ChildItem -Path "packages" -Recurse -Include $packageName -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  Found alternative: $($_.FullName)" }
+            
             throw "Critical package not found: $package"
           } else {
-            Write-Host "Verified package: $package"
+            Write-Host "✅ Verified package: $package"
           }
         }
         
@@ -56,13 +79,37 @@ jobs:
     - name: Build solution
       run: |
         Write-Host "Building solution..."
-        msbuild ${{ env.SOLUTION_FILE }} /p:Configuration=${{ env.BUILD_CONFIGURATION }} /p:Platform="Any CPU" /verbosity:normal
+        Write-Host "Current directory: $(Get-Location)"
+        Write-Host "Solution file: ${{ env.SOLUTION_FILE }}"
+        
+        # List all files to debug path issues
+        Write-Host "Directory contents:"
+        Get-ChildItem -Path . -Force | ForEach-Object { Write-Host "  $($_.Name)" }
+        
+        # Check if solution file exists
+        if (!(Test-Path "${{ env.SOLUTION_FILE }}")) {
+          throw "Solution file not found: ${{ env.SOLUTION_FILE }}"
+        }
+        
+        # Build solution with detailed output
+        Write-Host "Starting MSBuild..."
+        msbuild ${{ env.SOLUTION_FILE }} /p:Configuration=${{ env.BUILD_CONFIGURATION }} /p:Platform="Any CPU" /verbosity:normal /flp:logfile=build.log;verbosity=diagnostic
         
         if ($LASTEXITCODE -ne 0) {
+          Write-Host "Build failed. Checking for build log..."
+          if (Test-Path "build.log") {
+            Write-Host "Build log contents:"
+            Get-Content "build.log" | ForEach-Object { Write-Host $_ }
+          }
           throw "MSBuild failed with exit code $LASTEXITCODE"
         }
         
         Write-Host "Build completed successfully!"
+        
+        # List build outputs for debugging
+        Write-Host "Build outputs:"
+        Get-ChildItem -Path "tests\MVCRandomAnswerGenerator.Framework.Tests\bin" -Recurse -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.FullName)" }
+        Get-ChildItem -Path "src\MVCRandomAnswerGenerator.Framework\MVCRandomAnswerGenerator\bin" -Recurse -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.FullName)" }
       shell: powershell
 
     - name: Create test results directory
@@ -70,26 +117,77 @@ jobs:
         if (!(Test-Path "TestResults")) { New-Item -ItemType Directory -Path "TestResults" }
       shell: powershell
 
+    - name: Upload build logs
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: build-logs
+        path: |
+          build.log
+          *.log
+
     - name: Run tests
       run: |
+        Write-Host "Test execution details:"
         $testDll = "tests\MVCRandomAnswerGenerator.Framework.Tests\bin\${{ env.BUILD_CONFIGURATION }}\MVCRandomAnswerGenerator.Framework.Tests.dll"
         $xunitRunner = ".\packages\xunit.runner.console.2.4.1\tools\net452\xunit.console.exe"
         
-        Write-Host "Running tests..."
-        Write-Host "Test DLL: $testDll"
-        Write-Host "xUnit runner: $xunitRunner"
+        Write-Host "Test DLL path: $testDll"
+        Write-Host "xUnit runner path: $xunitRunner"
+        Write-Host "Current directory: $(Get-Location)"
+        
+        # List directory contents for debugging
+        Write-Host "=== Searching for Test Assembly ==="
+        $testDir = "tests\MVCRandomAnswerGenerator.Framework.Tests\bin"
+        if (Test-Path $testDir) {
+          Write-Host "Test bin directory exists. Contents:"
+          Get-ChildItem -Path $testDir -Recurse | ForEach-Object { Write-Host "  $($_.FullName)" }
+        } else {
+          Write-Host "Test bin directory does not exist: $testDir"
+          Write-Host "Available directories in tests\MVCRandomAnswerGenerator.Framework.Tests\:"
+          Get-ChildItem -Path "tests\MVCRandomAnswerGenerator.Framework.Tests\" -Directory -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.Name)" }
+        }
+        
+        Write-Host "=== Searching for xUnit Runner ==="
+        $packagesDir = ".\packages"
+        if (Test-Path $packagesDir) {
+          Write-Host "Packages directory exists. xUnit related contents:"
+          Get-ChildItem -Path $packagesDir -Directory | Where-Object { $_.Name -like "*xunit*" } | ForEach-Object { 
+            Write-Host "  Package: $($_.Name)"
+            Get-ChildItem -Path $_.FullName -Recurse -Include "*.exe" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "    Executable: $($_.FullName)" }
+          }
+        } else {
+          Write-Host "Packages directory does not exist: $packagesDir"
+        }
         
         # Verify test assembly exists
         if (!(Test-Path $testDll)) {
+          Write-Host "❌ Test assembly not found at: $testDll"
+          
+          # Try to find test DLLs anywhere
+          Write-Host "Searching for test assemblies in entire repository..."
+          Get-ChildItem -Path . -Recurse -Include "*Tests*.dll" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  Found: $($_.FullName)" }
+          
           throw "Test assembly not found at: $testDll"
+        } else {
+          Write-Host "✅ Test assembly found: $testDll"
         }
         
         # Verify xUnit runner exists
         if (!(Test-Path $xunitRunner)) {
+          Write-Host "❌ xUnit console runner not found at: $xunitRunner"
+          
+          # Try to find xUnit console runners anywhere
+          Write-Host "Searching for xUnit console runners in packages..."
+          Get-ChildItem -Path . -Recurse -Include "xunit.console.exe" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  Found: $($_.FullName)" }
+          
           throw "xUnit console runner not found at: $xunitRunner"
+        } else {
+          Write-Host "✅ xUnit runner found: $xunitRunner"
         }
         
-        # Run tests with coverage collection
+        # Run tests with verbose output
+        Write-Host "=== Running Tests ==="
         & $xunitRunner $testDll -xml TestResults\test-results.xml -verbose
         
         if ($LASTEXITCODE -ne 0) {
