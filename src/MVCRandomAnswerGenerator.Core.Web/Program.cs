@@ -13,7 +13,9 @@ builder.Services.Configure<AnswerGeneratorOptions>(
     builder.Configuration.GetSection(AnswerGeneratorOptions.SectionName));
 
 // Validate configuration options at startup
-builder.Services.AddOptionsWithValidateOnStart<AnswerGeneratorOptions>();
+builder.Services.AddOptions<AnswerGeneratorOptions>()
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 // Register business logic services
 builder.Services.AddScoped<IAnswerGenerator, AnswerGenerator>();
