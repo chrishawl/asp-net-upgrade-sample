@@ -25,8 +25,11 @@ builder.Services.AddHealthChecks()
 // Configure logging for structured logging
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
-builder.Logging.AddDebug();
 
+if (builder.Environment.IsDevelopment())
+{
+    builder.Logging.AddDebug();
+}
 // Add JSON logging for structured logs in production
 if (!builder.Environment.IsDevelopment())
 {
