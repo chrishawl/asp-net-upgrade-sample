@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using MVCRandomAnswerGenerator.Core.Domain;

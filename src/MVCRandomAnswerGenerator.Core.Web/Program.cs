@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using MVCRandomAnswerGenerator.Core.Domain;
 using MVCRandomAnswerGenerator.Core.Web.Configuration;
@@ -60,7 +61,7 @@ app.UseRouting();
 app.UseAuthorization();
 
 // Configure health checks endpoint
-app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+app.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResponseWriter = async (context, report) =>
     {
