@@ -193,4 +193,8 @@ ehthumbs.db
 **/*.bak
 *.tmb
 **/*.tmb
+## BenchmarkDotNet artifacts
+BenchmarkDotNet.Artifacts/
+**/BenchmarkDotNet.Artifacts/
+
 # End of .gitignore
