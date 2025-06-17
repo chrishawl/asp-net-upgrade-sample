@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using MVCRandomAnswerGenerator.Core.Domain;
 using MVCRandomAnswerGenerator.Core.Web.Configuration;
 using MVCRandomAnswerGenerator.Core.Web.HealthChecks;
+using MVCRandomAnswerGenerator.Core.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +21,9 @@ builder.Services.AddOptions<AnswerGeneratorOptions>()
 
 // Register business logic services
 builder.Services.AddScoped<IAnswerGenerator, AnswerGenerator>();
+
+// Register application services
+builder.Services.AddSingleton<IQuestionAnswerService, InMemoryQuestionAnswerService>();
 
 // Add health checks
 builder.Services.AddHealthChecks()
@@ -85,9 +89,6 @@ app.MapHealthChecks("/health", new HealthCheckOptions
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
-
-// Add a simple root endpoint for now (will be replaced by HomeController later)
-app.MapGet("/", () => "ASP.NET Core 8 Random Answer Generator - Ready for controller migration!");
 
 // Log application startup
 var logger = app.Services.GetRequiredService<ILogger<Program>>();

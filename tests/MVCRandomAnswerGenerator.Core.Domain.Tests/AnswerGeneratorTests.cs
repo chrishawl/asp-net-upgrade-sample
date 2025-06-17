@@ -69,4 +69,82 @@ public class AnswerGeneratorTests
         // Assert
         Assert.Contains(answer, expectedAnswers);
     }
+
+    [Fact]
+    public async Task GenerateAnswerAsync_WithSameQuestion_ReturnsSameAnswer()
+    {
+        // Arrange
+        const string question = "Will this work?";
+
+        // Act
+        var answer1 = await _answerGenerator.GenerateAnswerAsync(question);
+        var answer2 = await _answerGenerator.GenerateAnswerAsync(question);
+
+        // Assert
+        Assert.Equal(answer1, answer2);
+    }
+
+    [Fact]
+    public async Task GenerateAnswerAsync_WithNullQuestion_ThrowsArgumentNullException()
+    {
+        // Arrange
+        string? nullQuestion = null;
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _answerGenerator.GenerateAnswerAsync(nullQuestion!));
+    }
+
+    [Fact]
+    public async Task GenerateAnswerAsync_ReturnsSameResultAsSyncVersion()
+    {
+        // Arrange
+        const string question = "Will this work consistently?";
+
+        // Act
+        var syncAnswer = _answerGenerator.GenerateAnswer(question);
+        var asyncAnswer = await _answerGenerator.GenerateAnswerAsync(question);
+
+        // Assert
+        Assert.Equal(syncAnswer, asyncAnswer);
+    }
+
+    [Theory]
+    [InlineData("Will this work?")]
+    [InlineData("Is this a good idea?")]
+    [InlineData("Should I continue?")]
+    [InlineData("Will it rain tomorrow?")]
+    [InlineData("Am I on the right track?")]
+    public async Task GenerateAnswerAsync_WithValidQuestion_ReturnsKnownAnswer(string question)
+    {
+        // Arrange
+        var expectedAnswers = new[]
+        {
+            "It is certain",
+            "It is decidedly so",
+            "Without a doubt",
+            "Yes, definitely",
+            "You may rely on it",
+            "As I see it, yes",
+            "Most likely",
+            "Outlook good",
+            "Yes",
+            "Signs point to yes",
+            "Reply hazy try again",
+            "Ask again later",
+            "Better not tell you now",
+            "Cannot predict now",
+            "Concentrate and ask again",
+            "Don't count on it",
+            "My reply is no",
+            "My sources say no",
+            "Outlook not so good",
+            "Very doubtful"
+        };
+
+        // Act
+        var answer = await _answerGenerator.GenerateAnswerAsync(question);
+
+        // Assert
+        Assert.Contains(answer, expectedAnswers);
+    }
 }
