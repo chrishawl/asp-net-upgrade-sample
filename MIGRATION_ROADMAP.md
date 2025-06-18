@@ -495,7 +495,7 @@ public class IntegrationTests : IClassFixture<WebApplicationFactory<Program>>
 
 **Tasks**:
 - Create `.github/workflows/dotnet-core.yml`
-- Configure multi-platform builds (Windows, Linux, macOS)
+- Configure multi-platform builds (Windows, Linux)
 - Add comprehensive test execution and reporting
 - Implement code coverage with quality gates
 - Add security scanning and dependency checks
@@ -525,7 +525,7 @@ jobs:
   build-and-test:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     
     steps:

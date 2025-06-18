@@ -8,8 +8,7 @@ The `.github/workflows/dotnet-core.yml` pipeline provides enterprise-grade CI/CD
 
 ### 🏗️ **Multi-Platform Builds**
 - **Linux** (ubuntu-latest): Primary platform for deployment
-- **Windows** (windows-latest): Compatibility testing  
-- **macOS** (macos-latest): Cross-platform validation
+- **Windows** (windows-latest): Compatibility testing
 
 ### 🧪 **Comprehensive Testing**
 - **Unit Tests**: 74 domain tests + 14 web tests
@@ -46,7 +45,7 @@ The `.github/workflows/dotnet-core.yml` pipeline provides enterprise-grade CI/CD
 ```yaml
 strategy:
   matrix:
-    os: [ubuntu-latest, windows-latest, macos-latest]
+    os: [ubuntu-latest, windows-latest]
 ```
 
 **Responsibilities:**
