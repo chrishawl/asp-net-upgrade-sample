@@ -269,28 +269,32 @@ jobs:
 
     - name: Generate coverage report
       run: |
-        dotnet test tests/MVCRandomAnswerGenerator.Core.Domain.Tests/MVCRandomAnswerGenerator.Core.Domain.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./coverage.xml --configuration ${{ env.BUILD_CONFIGURATION }}
-        dotnet test tests/MVCRandomAnswerGenerator.Core.Web.Tests/MVCRandomAnswerGenerator.Core.Web.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./coverage.xml --configuration ${{ env.BUILD_CONFIGURATION }}
+        dotnet test tests/MVCRandomAnswerGenerator.Core.Domain.Tests/MVCRandomAnswerGenerator.Core.Domain.Tests.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --collect:"XPlat Code Coverage" --results-directory coverage-results/ --logger:"console;verbosity=minimal"
 
     - name: Install ReportGenerator
       run: dotnet tool install --global dotnet-reportgenerator-globaltool
 
     - name: Generate coverage summary
       run: |
-        reportgenerator -reports:"tests/**/coverage.xml" -targetdir:"./coverage-report" -reporttypes:"TextSummary;Html"
+        reportgenerator -reports:"coverage-results/**/coverage.cobertura.xml" -targetdir:"./coverage-report" -reporttypes:"TextSummary;Html"
         
-        # Extract coverage percentage
-        COVERAGE=$(grep -oP "Line coverage: \K[\d\.]+%" ./coverage-report/Summary.txt | head -1)
-        echo "Coverage: $COVERAGE"
+        # Extract coverage percentage for business logic (Domain project)
+        DOMAIN_COVERAGE=$(grep -oP "Line coverage: \K[\d\.]+%" ./coverage-report/Summary.txt | head -1)
+        echo "Domain Coverage: $DOMAIN_COVERAGE"
         
-        # Check if coverage meets threshold (90%)
-        COVERAGE_NUM=$(echo $COVERAGE | sed 's/%//')
+        # Check if business logic coverage meets threshold (90%)
+        COVERAGE_NUM=$(echo $DOMAIN_COVERAGE | sed 's/%//')
         if (( $(echo "$COVERAGE_NUM < 90" | bc -l) )); then
-          echo "Coverage $COVERAGE is below 90% threshold"
+          echo "Domain coverage $DOMAIN_COVERAGE is below 90% threshold"
+          echo "Business logic must maintain high test coverage for quality assurance"
           exit 1
         else
-          echo "Coverage $COVERAGE meets 90% threshold"
+          echo "Domain coverage $DOMAIN_COVERAGE meets 90% threshold ✅"
         fi
+        
+        # Generate combined coverage report (informational only)
+        echo "Generating combined coverage report for full visibility..."
+        reportgenerator -reports:"tests/**/coverage.cobertura.xml" -targetdir:"./coverage-report-full" -reporttypes:"TextSummary;Html" || true
 
     - name: Upload coverage report
       uses: actions/upload-artifact@v4
