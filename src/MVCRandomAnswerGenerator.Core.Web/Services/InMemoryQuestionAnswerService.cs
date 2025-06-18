@@ -5,10 +5,11 @@ namespace MVCRandomAnswerGenerator.Core.Web.Services;
 /// <summary>
 /// In-memory implementation of the question and answer service.
 /// This is a singleton service that maintains state across requests.
-/// </summary>
+/// </summary>  
 public sealed class InMemoryQuestionAnswerService : IQuestionAnswerService
 {
     private readonly List<QuestionAndAnswer> _allAnswers = [];
+    private readonly object _lock = new();
 
     /// <summary>
     /// Gets all stored questions and answers.
@@ -16,7 +17,10 @@ public sealed class InMemoryQuestionAnswerService : IQuestionAnswerService
     /// <returns>A list of questions and answers ordered by most recent first.</returns>
     public IReadOnlyList<QuestionAndAnswer> GetAll()
     {
-        return _allAnswers.AsReadOnly();
+        lock (_lock)
+        {
+            return _allAnswers.ToList().AsReadOnly();
+        }
     }
 
     /// <summary>
@@ -26,7 +30,10 @@ public sealed class InMemoryQuestionAnswerService : IQuestionAnswerService
     public void Add(QuestionAndAnswer questionAndAnswer)
     {
         ArgumentNullException.ThrowIfNull(questionAndAnswer);
-        _allAnswers.Insert(0, questionAndAnswer);
+        lock (_lock)
+        {
+            _allAnswers.Insert(0, questionAndAnswer);
+        }
     }
 
     /// <summary>
@@ -34,6 +41,9 @@ public sealed class InMemoryQuestionAnswerService : IQuestionAnswerService
     /// </summary>
     public void Clear()
     {
-        _allAnswers.Clear();
+        lock (_lock)
+        {
+            _allAnswers.Clear();
+        }
     }
 }
