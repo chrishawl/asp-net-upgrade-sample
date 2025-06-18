@@ -1,0 +1,20 @@
+services:
+  mvc-random-answer-generator:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_HTTP_PORT=8080
+      - DOTNET_USE_POLLING_FILE_WATCHER=true
+      - DOTNET_RUNNING_IN_CONTAINER=true
+    volumes:
+      # Mount source code for development (if needed)
+      # - ./src:/src:ro
+      # Mount logs for debugging
+      - ./logs:/app/logs
+    # Override health check for development
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
