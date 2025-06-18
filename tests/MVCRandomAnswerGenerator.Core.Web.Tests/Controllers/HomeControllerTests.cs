@@ -45,30 +45,30 @@ public class HomeControllerTests
     }
 
     [Fact]
-    public async Task Index_POST_WithValidQuestion_AddsQuestionAndRedirects()
+    public void Index_POST_WithValidQuestion_AddsQuestionAndRedirects()
     {
         // Arrange
         const string question = "Test question?";
         const string expectedAnswer = "Test answer";
         _mockAnswerGenerator
-            .Setup(x => x.GenerateAnswerAsync(question))
-            .ReturnsAsync(expectedAnswer);
+            .Setup(x => x.GenerateAnswer(question))
+            .Returns(expectedAnswer);
 
         // Act
-        var result = await _controller.Index(question);
+        var result = _controller.Index(question);
 
         // Assert
         result.Should().BeOfType<RedirectToActionResult>();
         var redirectResult = result as RedirectToActionResult;
         redirectResult!.ActionName.Should().Be(nameof(HomeController.Index));
 
-        _mockAnswerGenerator.Verify(x => x.GenerateAnswerAsync(question), Times.Once);
+        _mockAnswerGenerator.Verify(x => x.GenerateAnswer(question), Times.Once);
         _mockQuestionAnswerService.Verify(x => x.Add(It.Is<QuestionAndAnswer>(qa => 
             qa.Question == question && qa.Answer == expectedAnswer)), Times.Once);
     }
 
     [Fact]
-    public async Task Index_POST_WithInvalidModelState_ReturnsViewWithErrors()
+    public void Index_POST_WithInvalidModelState_ReturnsViewWithErrors()
     {
         // Arrange
         _controller.ModelState.AddModelError("nextQuestion", "The question is required.");
@@ -79,7 +79,7 @@ public class HomeControllerTests
         _mockQuestionAnswerService.Setup(x => x.GetAll()).Returns(expectedAnswers);
 
         // Act
-        var result = await _controller.Index("");
+        var result = _controller.Index("");
 
         // Assert
         result.Should().BeOfType<ViewResult>();
@@ -87,19 +87,19 @@ public class HomeControllerTests
         viewResult!.Model.Should().BeEquivalentTo(expectedAnswers);
         _controller.ModelState.IsValid.Should().BeFalse();
 
-        _mockAnswerGenerator.Verify(x => x.GenerateAnswerAsync(It.IsAny<string>()), Times.Never);
+        _mockAnswerGenerator.Verify(x => x.GenerateAnswer(It.IsAny<string>()), Times.Never);
         _mockQuestionAnswerService.Verify(x => x.Add(It.IsAny<QuestionAndAnswer>()), Times.Never);
     }
 
     [Fact]
-    public async Task Index_POST_WhenAnswerGeneratorThrows_ReturnsViewWithError()
+    public void Index_POST_WhenAnswerGeneratorThrows_ReturnsViewWithError()
     {
         // Arrange
         const string question = "Test question?";
         var expectedException = new InvalidOperationException("Test exception");
         _mockAnswerGenerator
-            .Setup(x => x.GenerateAnswerAsync(question))
-            .ThrowsAsync(expectedException);
+            .Setup(x => x.GenerateAnswer(question))
+            .Throws(expectedException);
         
         var expectedAnswers = new List<QuestionAndAnswer>
         {
@@ -108,7 +108,7 @@ public class HomeControllerTests
         _mockQuestionAnswerService.Setup(x => x.GetAll()).Returns(expectedAnswers);
 
         // Act
-        var result = await _controller.Index(question);
+        var result = _controller.Index(question);
 
         // Assert
         result.Should().BeOfType<ViewResult>();
@@ -136,7 +136,7 @@ public class HomeControllerTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public async Task Index_POST_WithInvalidQuestion_DoesNotCallServices(string? invalidQuestion)
+    public void Index_POST_WithInvalidQuestion_DoesNotCallServices(string? invalidQuestion)
     {
         // Arrange
         if (string.IsNullOrWhiteSpace(invalidQuestion))
@@ -147,11 +147,11 @@ public class HomeControllerTests
         _mockQuestionAnswerService.Setup(x => x.GetAll()).Returns(new List<QuestionAndAnswer>());
 
         // Act
-        var result = await _controller.Index(invalidQuestion);
+        var result = _controller.Index(invalidQuestion);
 
         // Assert
         result.Should().BeOfType<ViewResult>();
-        _mockAnswerGenerator.Verify(x => x.GenerateAnswerAsync(It.IsAny<string>()), Times.Never);
+        _mockAnswerGenerator.Verify(x => x.GenerateAnswer(It.IsAny<string>()), Times.Never);
         _mockQuestionAnswerService.Verify(x => x.Add(It.IsAny<QuestionAndAnswer>()), Times.Never);
     }
 }

@@ -9,7 +9,6 @@ namespace MVCRandomAnswerGenerator.Core.Web.Services;
 public sealed class InMemoryQuestionAnswerService : IQuestionAnswerService
 {
     private readonly List<QuestionAndAnswer> _allAnswers = [];
-    private readonly object _lock = new();
 
     /// <summary>
     /// Gets all stored questions and answers.
@@ -17,10 +16,7 @@ public sealed class InMemoryQuestionAnswerService : IQuestionAnswerService
     /// <returns>A list of questions and answers ordered by most recent first.</returns>
     public IReadOnlyList<QuestionAndAnswer> GetAll()
     {
-        lock (_lock)
-        {
-            return _allAnswers.ToList().AsReadOnly();
-        }
+        return _allAnswers.AsReadOnly();
     }
 
     /// <summary>
@@ -30,11 +26,7 @@ public sealed class InMemoryQuestionAnswerService : IQuestionAnswerService
     public void Add(QuestionAndAnswer questionAndAnswer)
     {
         ArgumentNullException.ThrowIfNull(questionAndAnswer);
-        
-        lock (_lock)
-        {
-            _allAnswers.Insert(0, questionAndAnswer);
-        }
+        _allAnswers.Insert(0, questionAndAnswer);
     }
 
     /// <summary>
@@ -42,9 +34,6 @@ public sealed class InMemoryQuestionAnswerService : IQuestionAnswerService
     /// </summary>
     public void Clear()
     {
-        lock (_lock)
-        {
-            _allAnswers.Clear();
-        }
+        _allAnswers.Clear();
     }
 }

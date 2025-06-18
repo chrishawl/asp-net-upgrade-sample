@@ -33,7 +33,7 @@ public class HomeController(
     /// <returns>Redirects to the Index action to display updated results, or returns the view with validation errors.</returns>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Index([Required] string nextQuestion)
+    public IActionResult Index([Required] string nextQuestion)
     {
         if (!ModelState.IsValid)
         {
@@ -46,7 +46,7 @@ public class HomeController(
         {
             logger.LogInformation("Processing question: {Question}", nextQuestion);
             
-            var answer = await answerGenerator.GenerateAnswerAsync(nextQuestion);
+            var answer = answerGenerator.GenerateAnswer(nextQuestion);
             var questionAndAnswer = new QuestionAndAnswer(nextQuestion, answer, DateTime.UtcNow);
             
             questionAnswerService.Add(questionAndAnswer);
