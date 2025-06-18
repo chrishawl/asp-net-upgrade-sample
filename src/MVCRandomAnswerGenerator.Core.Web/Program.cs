@@ -99,3 +99,6 @@ logger.LogInformation("Configuration - MaxStoredQuestions: {MaxStoredQuestions},
     options.MaxStoredQuestions, options.EnableCaching);
 
 app.Run();
+
+// Make the Program class accessible for integration testing
+public partial class Program { }
