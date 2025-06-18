@@ -1,0 +1,47 @@
+services:
+  mvc-random-answer-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_HTTP_PORT=8080
+    volumes:
+      # Mount configuration for development
+      - ./src/MVCRandomAnswerGenerator.Core.Web/appsettings.Development.json:/app/appsettings.Development.json:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    container_name: mvc-random-answer-generator-dev
+
+  # Additional service for testing with different configuration
+  mvc-random-answer-generator-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5002:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    container_name: mvc-random-answer-generator-test
+    profiles:
+      - test
+
+networks:
+  default:
+    name: mvc-random-answer-generator-network
