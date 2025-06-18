@@ -1,0 +1,101 @@
+@model IReadOnlyList<MVCRandomAnswerGenerator.Core.Domain.QuestionAndAnswer>
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="jumbotron bg-primary text-white p-4 rounded mb-4">
+                <h1 class="display-4">ASP.NET Core Magic 8 Ball</h1>
+                <p class="lead">Ask your question, and get the answer.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <form asp-action="Index" method="post" class="needs-validation" novalidate>
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label for="nextQuestion" class="form-label">Ask your question:</label>
+                        <input type="text" class="form-control" id="nextQuestion" name="nextQuestion" 
+                               placeholder="Enter your question here..." required 
+                               aria-describedby="nextQuestionHelp">
+                        <div class="invalid-feedback">
+                            Please provide a valid question.
+                        </div>
+                        <div id="nextQuestionHelp" class="form-text">
+                            Ask any question and receive a magical answer!
+                        </div>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary btn-lg w-100">Ask</button>
+                    </div>
+                </div>
+                @Html.AntiForgeryToken()
+            </form>
+        </div>
+    </div>
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="row">
+            <div class="col-12">
+                <h2 class="mb-3">Previous Questions and Answers</h2>
+                <div class="questions-answers">
+                    @foreach (var qa in Model)
+                    {
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h5 class="card-title text-muted">Question:</h5>
+                                        <p class="card-text">@qa.Question</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h5 class="card-title text-primary">Answer:</h5>
+                                        <p class="card-text fw-bold">@qa.Answer</p>
+                                    </div>
+                                </div>
+                                <small class="text-muted">Asked on @qa.CreatedAt.ToString("g")</small>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-info" role="alert">
+                    <h4 class="alert-heading">No questions yet!</h4>
+                    <p>Ask your first question above to get started with the Magic 8 Ball.</p>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Client-side validation for Bootstrap 5
+        (function() {
+            'use strict';
+            window.addEventListener('load', function() {
+                var forms = document.getElementsByClassName('needs-validation');
+                var validation = Array.prototype.filter.call(forms, function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+    </script>
+}
