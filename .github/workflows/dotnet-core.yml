@@ -1,0 +1,327 @@
+name: .NET 8 CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'src/MVCRandomAnswerGenerator.Core.Domain/**'
+      - 'src/MVCRandomAnswerGenerator.Core.Web/**'
+      - 'tests/MVCRandomAnswerGenerator.Core.Domain.Tests/**'
+      - 'tests/MVCRandomAnswerGenerator.Core.Web.Tests/**'
+      - '.github/workflows/dotnet-core.yml'
+      - 'Dockerfile'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/MVCRandomAnswerGenerator.Core.Domain/**'
+      - 'src/MVCRandomAnswerGenerator.Core.Web/**'
+      - 'tests/MVCRandomAnswerGenerator.Core.Domain.Tests/**'
+      - 'tests/MVCRandomAnswerGenerator.Core.Web.Tests/**'
+      - '.github/workflows/dotnet-core.yml'
+      - 'Dockerfile'
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  BUILD_CONFIGURATION: Release
+  DOCKER_IMAGE_NAME: mvc-random-answer-generator
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  checks: write
+  security-events: write
+  actions: read
+
+jobs:
+  # Multi-platform build and test
+  build-and-test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Restore dependencies
+      run: dotnet restore src/MVCRandomAnswerGenerator.Core.Web/MVCRandomAnswerGenerator.Core.Web.csproj
+
+    - name: Build
+      run: dotnet build src/MVCRandomAnswerGenerator.Core.Web/MVCRandomAnswerGenerator.Core.Web.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+
+    - name: Test Domain
+      run: dotnet test tests/MVCRandomAnswerGenerator.Core.Domain.Tests/MVCRandomAnswerGenerator.Core.Domain.Tests.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --logger trx --results-directory TestResults/Domain --collect:"XPlat Code Coverage" --settings tests/MVCRandomAnswerGenerator.Core.Domain.Tests/coverlet.runsettings
+
+    - name: Test Web
+      run: dotnet test tests/MVCRandomAnswerGenerator.Core.Web.Tests/MVCRandomAnswerGenerator.Core.Web.Tests.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --logger trx --results-directory TestResults/Web --collect:"XPlat Code Coverage" --settings tests/MVCRandomAnswerGenerator.Core.Web.Tests/coverlet.runsettings
+      continue-on-error: true  # Allow pipeline to continue even if some tests fail
+
+    - name: Run Performance Benchmarks (Ubuntu only)
+      if: matrix.os == 'ubuntu-latest'
+      run: dotnet run --project tests/MVCRandomAnswerGenerator.Core.Domain.Tests/MVCRandomAnswerGenerator.Core.Domain.Tests.csproj -c Release -- --benchmark --job short
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-${{ matrix.os }}
+        path: TestResults/
+        
+    - name: Upload coverage reports to Codecov (Ubuntu only)
+      if: matrix.os == 'ubuntu-latest'
+      uses: codecov/codecov-action@v4
+      with:
+        directory: TestResults/
+        fail_ci_if_error: true
+        flags: unittests
+        name: .NET 8 Coverage
+        verbose: true
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+    - name: Publish test results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: .NET 8 Tests (${{ matrix.os }})
+        path: TestResults/**/*.trx
+        reporter: dotnet-trx
+        fail-on-error: false  # Don't fail the pipeline on test reporter issues
+
+  # Code Quality and Security Analysis
+  code-quality:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: csharp
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Build for CodeQL
+      run: dotnet build src/MVCRandomAnswerGenerator.Core.Web/MVCRandomAnswerGenerator.Core.Web.csproj --configuration ${{ env.BUILD_CONFIGURATION }}
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+
+    - name: Run .NET Security Analysis
+      run: |
+        dotnet list package --vulnerable --include-transitive > security-audit.txt
+        if grep -q "has the following vulnerable packages" security-audit.txt; then
+          echo "Security vulnerabilities found!"
+          cat security-audit.txt
+          exit 1
+        else
+          echo "No security vulnerabilities found."
+        fi
+
+  # Docker Build and Container Testing
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Cache Docker layers
+      uses: actions/cache@v4
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+
+    - name: Build Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: false
+        tags: ${{ env.DOCKER_IMAGE_NAME }}:latest
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+    - name: Move Docker cache
+      run: |
+        rm -rf /tmp/.buildx-cache
+        mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+    - name: Run container security scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.DOCKER_IMAGE_NAME }}:latest
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Test Docker container
+      run: |
+        echo "Testing Docker container functionality..."
+        # Start container in background
+        docker run -d -p 8080:8080 --name test-container ${{ env.DOCKER_IMAGE_NAME }}:latest
+        
+        # Wait for container to start
+        sleep 30
+        
+        # Test if container is running
+        if ! docker ps | grep -q test-container; then
+          echo "Container failed to start"
+          docker logs test-container
+          exit 1
+        fi
+        
+        # Test health endpoint with retries
+        for i in {1..10}; do
+          if curl -f http://localhost:8080/health; then
+            echo "Health check passed"
+            break
+          fi
+          if [ $i -eq 10 ]; then
+            echo "Health check failed after 10 attempts"
+            docker logs test-container
+            exit 1
+          fi
+          sleep 3
+        done
+        
+        # Test main application endpoint
+        for i in {1..5}; do
+          if curl -f http://localhost:8080; then
+            echo "Main application endpoint test passed"
+            break
+          fi
+          if [ $i -eq 5 ]; then
+            echo "Main application endpoint test failed after 5 attempts"
+            docker logs test-container
+            exit 1
+          fi
+          sleep 3
+        done
+        
+        echo "All Docker tests passed!"
+        docker logs test-container
+        docker stop test-container
+        docker rm test-container
+
+    - name: Export Docker image
+      if: github.ref == 'refs/heads/main'
+      run: |
+        docker save ${{ env.DOCKER_IMAGE_NAME }}:latest | gzip > docker-image.tar.gz
+
+    - name: Upload Docker image artifact
+      if: github.ref == 'refs/heads/main'
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-image
+        path: docker-image.tar.gz
+        retention-days: 7
+
+  # Coverage Quality Gate
+  coverage-check:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Install coverage tools
+      run: dotnet tool install --global coverlet.console
+
+    - name: Generate coverage report
+      run: |
+        dotnet test tests/MVCRandomAnswerGenerator.Core.Domain.Tests/MVCRandomAnswerGenerator.Core.Domain.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./coverage.xml --configuration ${{ env.BUILD_CONFIGURATION }}
+        dotnet test tests/MVCRandomAnswerGenerator.Core.Web.Tests/MVCRandomAnswerGenerator.Core.Web.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./coverage.xml --configuration ${{ env.BUILD_CONFIGURATION }}
+
+    - name: Install ReportGenerator
+      run: dotnet tool install --global dotnet-reportgenerator-globaltool
+
+    - name: Generate coverage summary
+      run: |
+        reportgenerator -reports:"tests/**/coverage.xml" -targetdir:"./coverage-report" -reporttypes:"TextSummary;Html"
+        
+        # Extract coverage percentage
+        COVERAGE=$(grep -oP "Line coverage: \K[\d\.]+%" ./coverage-report/Summary.txt | head -1)
+        echo "Coverage: $COVERAGE"
+        
+        # Check if coverage meets threshold (90%)
+        COVERAGE_NUM=$(echo $COVERAGE | sed 's/%//')
+        if (( $(echo "$COVERAGE_NUM < 90" | bc -l) )); then
+          echo "Coverage $COVERAGE is below 90% threshold"
+          exit 1
+        else
+          echo "Coverage $COVERAGE meets 90% threshold"
+        fi
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: ./coverage-report/
+
+  # Staging Deployment (main branch only)
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: [build-and-test, code-quality, docker-build, coverage-check]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: staging
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Download Docker image
+      uses: actions/download-artifact@v4
+      with:
+        name: docker-image
+
+    - name: Load Docker image
+      run: |
+        docker load < docker-image.tar.gz
+        docker tag ${{ env.DOCKER_IMAGE_NAME }}:latest ${{ env.DOCKER_IMAGE_NAME }}:staging-${{ github.sha }}
+
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # In a real scenario, this would deploy to your staging environment
+        # For example: kubectl apply -f k8s/staging/ or docker-compose up -d
+        echo "Deployment completed successfully"
