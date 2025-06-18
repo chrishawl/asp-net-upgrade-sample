@@ -1,0 +1,56 @@
+@{
+    ViewData["Title"] = "About";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="display-4">@ViewData["Title"]</h1>
+            <p class="lead">@ViewData["Message"]</p>
+            
+            <div class="row mt-4">
+                <div class="col-md-8">
+                    <h3>What is the Random Answer Generator?</h3>
+                    <p>
+                        The Random Answer Generator is a modern ASP.NET Core 8 application that provides Magic 8 Ball style answers 
+                        to your questions. It's built with the latest web technologies and follows modern development practices.
+                    </p>
+                    
+                    <h3>Features</h3>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <strong>Modern ASP.NET Core 8:</strong> Built with the latest .NET technology
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Responsive Design:</strong> Works great on desktop, tablet, and mobile devices
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Bootstrap 5:</strong> Modern, accessible user interface
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Client-side Validation:</strong> Immediate feedback for better user experience
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Accessibility:</strong> WCAG 2.1 compliant for inclusive access
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">How to Use</h5>
+                        </div>
+                        <div class="card-body">
+                            <ol>
+                                <li>Type your question in the input field</li>
+                                <li>Click the "Ask" button</li>
+                                <li>Receive your magical answer!</li>
+                                <li>View your question history below</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
