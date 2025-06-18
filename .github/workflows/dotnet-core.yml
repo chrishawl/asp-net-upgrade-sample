@@ -69,7 +69,6 @@ jobs:
 
     - name: Test Web
       run: dotnet test tests/MVCRandomAnswerGenerator.Core.Web.Tests/MVCRandomAnswerGenerator.Core.Web.Tests.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --logger trx --results-directory TestResults/Web --collect:"XPlat Code Coverage" --settings tests/MVCRandomAnswerGenerator.Core.Web.Tests/coverlet.runsettings
-      continue-on-error: true  # Allow pipeline to continue even if some tests fail
 
     - name: Run Performance Benchmarks (Ubuntu only)
       if: matrix.os == 'ubuntu-latest'
